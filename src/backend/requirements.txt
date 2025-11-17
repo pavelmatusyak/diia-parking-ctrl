@@ -1,0 +1,58 @@
+# Core Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.10.5
+pydantic-settings==2.6.0
+
+# Database
+sqlalchemy==2.0.36
+alembic==1.14.0
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+
+# Redis & Caching
+redis==5.2.0
+hiredis==3.0.0
+
+# Async Tasks
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.17
+cryptography==44.0.0
+
+# Image Processing
+Pillow==11.0.0
+
+# Geolocation
+geopy==2.4.1
+
+# HTTP Client
+httpx==0.28.1
+aiohttp==3.11.10
+
+# File Storage
+boto3==1.35.76
+
+# Logging
+python-json-logger==3.2.1
+
+# PDF Generation
+reportlab==4.2.5
+
+# Utilities
+python-dotenv==1.0.1
+pyyaml==6.0.2
+python-dateutil==2.9.0
+
+# Development & Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+faker==33.1.0
+
+# Code Quality
+ruff==0.8.4
+mypy==1.13.0
+greenlet
