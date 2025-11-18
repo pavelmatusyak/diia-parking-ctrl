@@ -13,6 +13,7 @@ from routes.ocr import router as ocr_router
 from routes.geocoding import router as geocoding_router
 from routes.health import router as health_router
 from routes.reports import router as reports_router
+from routes.parking_analysis import router as parking_analysis_router
 
 logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
@@ -58,6 +59,7 @@ app.include_router(users_router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(ocr_router, prefix="/api/v1/ocr", tags=["OCR"])
 app.include_router(geocoding_router, prefix="/api/v1/geocoding", tags=["Geocoding"])
 app.include_router(reports_router, prefix="/api/v1/reports", tags=["Reports"])
+app.include_router(parking_analysis_router, prefix="/api/v1/parking-analysis", tags=["Parking Analysis"])
 
 local_storage_path = Path("local_storage")
 local_storage_path.mkdir(exist_ok=True)

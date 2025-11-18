@@ -161,3 +161,47 @@ class HealthCheckResponse(BaseModel):
     timestamp: datetime
     database: str
     redis: str
+
+
+class AnalyzeParkingRequest(BaseModel):
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    zoom: int = Field(default=17, ge=0, le=19, description="Map zoom level")
+    image_size: int = Field(default=512, ge=128, le=2048, description="Map image size")
+
+
+class ViolationReason(BaseModel):
+    source: str = Field(..., description="Source of the reason: rule_engine, map_analysis, or photo_analysis")
+    detail: str
+
+
+class CrossCheckAnalysis(BaseModel):
+    map_vs_photo: str
+    map_vs_rule_engine: str
+    photo_vs_rule_engine: str
+
+
+class ProbabilityBreakdown(BaseModel):
+    railway_crossing: float = Field(..., ge=0, le=1)
+    tram_track: float = Field(..., ge=0, le=1)
+    bridge_or_tunnel: float = Field(..., ge=0, le=1)
+    pedestrian_crossing_10m: float = Field(..., ge=0, le=1)
+    intersection_10m: float = Field(..., ge=0, le=1)
+    narrowing_less_than_3m: float = Field(..., ge=0, le=1)
+    bus_stop_30m: float = Field(..., ge=0, le=1)
+    driveway_exit_10m: float = Field(..., ge=0, le=1)
+    sidewalk: float = Field(..., ge=0, le=1)
+    pedestrian_zone: float = Field(..., ge=0, le=1)
+    cycleway: float = Field(..., ge=0, le=1)
+    blocking_traffic_signal: float = Field(..., ge=0, le=1)
+    blocking_roadway: float = Field(..., ge=0, le=1)
+
+
+class AnalyzeParkingResponse(BaseModel):
+    isViolation: bool
+    overallViolationConfidence: float = Field(..., ge=0, le=1)
+    likelyArticles: list[str]
+    probabilityBreakdown: ProbabilityBreakdown
+    reasons: list[ViolationReason]
+    crossChecks: CrossCheckAnalysis
+    finalHumanReadableConclusion: str
