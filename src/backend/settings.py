@@ -33,7 +33,11 @@ class Settings(BaseSettings):
 
     # API Keys
     OPENAI_API_KEY: str = ""
+    OPENAI_API_BASE: str = "https://api.openai.com/v1"
     GOOGLE_MAPS_API_KEY: Optional[str] = None
+
+    # Geo Service
+    GEO_SERVICE_URL: str = "http://localhost:8027"
 
     # File Storage (S3/MinIO)
     S3_ENDPOINT_URL: Optional[str] = None
