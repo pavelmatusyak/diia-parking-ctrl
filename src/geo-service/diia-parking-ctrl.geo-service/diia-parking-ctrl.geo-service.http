@@ -1,0 +1,6 @@
+@diia_parking_ctrl.geo_service_HostAddress = http://localhost:5183
+
+GET {{diia_parking_ctrl.geo_service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
