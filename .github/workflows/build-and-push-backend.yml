@@ -1,4 +1,4 @@
-name: Build and push GEO to ECR
+name: Build and push Backend to ECR
 
 on:
   push:
