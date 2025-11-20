@@ -14,6 +14,7 @@ from routes.geocoding import router as geocoding_router
 from routes.health import router as health_router
 from routes.reports import router as reports_router
 from routes.parking_analysis import router as parking_analysis_router
+from routes.auth import router as auth_router
 
 logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
@@ -54,6 +55,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(health_router, tags=["Health"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(violations_router, prefix="/api/v1/violations", tags=["Violations"])
 app.include_router(users_router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(ocr_router, prefix="/api/v1/ocr", tags=["OCR"])

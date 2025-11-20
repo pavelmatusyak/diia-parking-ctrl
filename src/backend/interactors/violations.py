@@ -104,6 +104,14 @@ class ViolationInteractor:
         if not violation:
             raise HTTPException(status_code=404, detail="Violation not found")
 
+        if file.filename:
+            file_extension = file.filename.split('.')[-1].lower()
+            if file_extension not in settings.ALLOWED_IMAGE_FORMATS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Непідтримуваний формат зображення. Дозволені формати: {', '.join(settings.ALLOWED_IMAGE_FORMATS).upper()}"
+                )
+
         file_data = await file.read()
 
         storage_result = await self.storage.upload_file(
@@ -240,6 +248,14 @@ class ViolationInteractor:
         violation = await self.get_violation(violation_id, user_id)
         if not violation:
             raise HTTPException(status_code=404, detail="Violation not found")
+
+        if file.filename:
+            file_extension = file.filename.split('.')[-1].lower()
+            if file_extension not in settings.ALLOWED_IMAGE_FORMATS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Непідтримуваний формат зображення. Дозволені формати: {', '.join(settings.ALLOWED_IMAGE_FORMATS).upper()}"
+                )
 
         file_data = await file.read()
 

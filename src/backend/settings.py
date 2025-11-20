@@ -48,6 +48,7 @@ class Settings(BaseSettings):
 
     # OCR Settings
     OCR_SERVICE_URL: Optional[str] = None  # External OCR service URL
+    OCR_SERVICE_BASE_URL: str = "http://3.79.95.116:5000"
     OCR_CONFIDENCE_THRESHOLD: float = 0.7
     OCR_MODEL_PATH: Optional[str] = None
 
