@@ -1,4 +1,4 @@
-name: Build and push Backend to ECR
+name: BACKEND
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/backend/**'
       - '.github/workflows/build-and-push-backend.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -26,7 +27,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
         id: ecr-login
 
-      - name: Build, tag, and push geo image
+      - name: Build, tag, and push backend image
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           ECR_REPOSITORY: diia-parking-ctrl-backend
@@ -35,3 +36,11 @@ jobs:
           docker build -t $ECR_REPOSITORY:latest ./src/backend/
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster diia-parking-ctrl-dev-cluster \
+            --service backend-service \
+            --force-new-deployment \
+            --region ${{ secrets.AWS_REGION }}
