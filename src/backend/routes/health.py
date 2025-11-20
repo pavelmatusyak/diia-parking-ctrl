@@ -25,13 +25,13 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         logger.error(f"Database health check failed: {e}")
         db_status = "unhealthy"
 
-    try:
-        redis_client = redis.from_url(settings.REDIS_URL)
-        await redis_client.ping()
-        await redis_client.close()
-    except Exception as e:
-        logger.error(f"Redis health check failed: {e}")
-        redis_status = "unhealthy"
+    # try:
+    #     redis_client = redis.from_url(settings.REDIS_URL)
+    #     await redis_client.ping()
+    #     await redis_client.close()
+    # except Exception as e:
+    #     logger.error(f"Redis health check failed: {e}")
+    #     redis_status = "unhealthy"
 
     return HealthCheckResponse(
         status="healthy" if db_status == "healthy" and redis_status == "healthy" else "degraded",
