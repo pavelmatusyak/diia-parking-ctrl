@@ -1,5 +1,4 @@
-name: Build and push GEO to ECR
-
+name: GEO
 on:
   push:
     branches: [ main ]
