@@ -38,4 +38,4 @@ ENV FLASK_APP=app.py
 ENV PYTHONUNBUFFERED=1
 
 # Run the application
-#CMD ["python", "app.py"]
+CMD ["python", "app.py"]

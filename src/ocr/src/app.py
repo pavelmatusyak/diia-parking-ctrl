@@ -5,12 +5,20 @@ import torch
 from werkzeug.utils import secure_filename
 import os
 import traceback
-from models.crnn_model import CRNN, NUM_CLASSES
+
+# CRNN imports
+from models.crnn_model import CRNN
 from utils.image_processor import preprocess_image_hls
 from utils.decoder import ctc_greedy_decode
+
+# OCR imports
+from utils.ocr_processor import OCRProcessor
+from utils.plate_transformer import get_perspective_transform, enhance_for_ocr
+
+# YOLO imports
 from utils.yolo_detector import get_box
 from ultralytics import YOLO
-import ultralytics  # <-- Imported for version check
+import ultralytics
 
 app = Flask(__name__)
 
@@ -35,12 +43,14 @@ STATUS_CODES = {
     5: "Plate detection failed",
     6: "Text recognition failed",
     7: "Invalid or corrupted image",
-    8: "Model not loaded"
+    8: "Model not loaded",
+    9: "Perspective transform failed"
 }
 
 # Global variables for models
 yolo_model = None
 crnn_model = None
+ocr_processor = None
 device = None
 
 
@@ -62,10 +72,9 @@ def allowed_file(filename):
 
 
 def initialize_models():
-    """Initialize YOLO and CRNN models"""
-    global yolo_model, crnn_model, device
+    """Initialize YOLO, CRNN, and OCR models"""
+    global yolo_model, crnn_model, ocr_processor, device
 
-    # Check and print versions first for better debugging context
     print_versions()
 
     try:
@@ -79,42 +88,38 @@ def initialize_models():
             return False
 
         print("-" * 50)
-        # Log the path being attempted to load
         print(f"Attempting to load YOLO model from path: {yolo_path}")
-        # The error is highly likely to occur in the next line
         yolo_model = YOLO(yolo_path, task='detect')
         print("YOLO model loaded successfully!")
 
-        # Explicitly check the loaded weights path property of the model
         if hasattr(yolo_model, 'ckpt_path'):
-            print(f"YOLO Model Checkpoint Path (YOLO_PATH): {yolo_model.ckpt_path}")
-        else:
-            # Fallback for older/different versions of the model object
-            print("YOLO Model loaded but 'ckpt_path' attribute is not available.")
-
+            print(f"YOLO Model Checkpoint Path: {yolo_model.ckpt_path}")
         print("-" * 50)
 
         # Load CRNN model
-
         crnn_path = 'models/crnn_epoch_60.pth'
         if not os.path.exists(crnn_path):
             print(f"Warning: CRNN model not found at {crnn_path}")
-            return False
-        print("LINE 107: Attempting to load CRNN model...")
-        crnn_model = CRNN(img_height=128, num_channels=3, hidden_size=256).to(device)
-        crnn_model.load_state_dict(torch.load(crnn_path, map_location=device))
-        crnn_model.eval()
-        print("CRNN model loaded successfully")
+            print("CRNN endpoint will be unavailable")
+        else:
+            print("Attempting to load CRNN model...")
+            crnn_model = CRNN(img_height=128, num_channels=3, hidden_size=256).to(device)
+            crnn_model.load_state_dict(torch.load(crnn_path, map_location=device))
+            crnn_model.eval()
+            print("CRNN model loaded successfully")
+
+        # Initialize EasyOCR
+        print("Initializing EasyOCR processor...")
+        ocr_processor = OCRProcessor(languages=['en'])
+        print("EasyOCR initialized successfully")
 
         return True
     except Exception as e:
-        # --- DEBUGGING CHANGE HERE ---
         print("-" * 50)
         print(f"FATAL ERROR during model initialization: {str(e)}")
         print("--- FULL TRACEBACK ---")
-        traceback.print_exc()  # This will print the exact file and line number
+        traceback.print_exc()
         print("-" * 50)
-        # --- END DEBUGGING CHANGE ---
         return False
 
 
@@ -122,24 +127,18 @@ def calculate_confidence(logits):
     """Calculate confidence score from model logits"""
     import torch.nn.functional as F
 
-    # Get probabilities
-    probs = F.softmax(logits, dim=2)  # (T, B, C)
-
-    # Get max probability at each timestep
-    max_probs, _ = torch.max(probs, dim=2)  # (T, B)
-
-    # Average confidence across all timesteps
+    probs = F.softmax(logits, dim=2)
+    max_probs, _ = torch.max(probs, dim=2)
     confidence = torch.mean(max_probs).item()
-
     return round(confidence, 2)
 
 
-def process_plate_image(image_path):
+def process_plate_image_crnn(image_path):
     """
-    Process uploaded image and detect plate number
+    Process uploaded image using YOLO + CRNN pipeline
 
     Returns:
-        dict: Result dictionary with status, code, plate, and confidence
+        dict: Result dictionary with status, code, plate, confidence, and bbox
     """
     try:
         # Read image
@@ -151,7 +150,8 @@ def process_plate_image(image_path):
                 "code": 7,
                 "message": STATUS_CODES[7],
                 "plate": None,
-                "confidence": 0.0
+                "confidence": 0.0,
+                "bbox": None
             }
 
         # Detect plate using YOLO
@@ -163,13 +163,14 @@ def process_plate_image(image_path):
                 "code": 4,
                 "message": STATUS_CODES[4],
                 "plate": None,
-                "confidence": 0.0
+                "confidence": 0.0,
+                "bbox": None
             }
 
         # Recognize text using CRNN
         with torch.no_grad():
             x = preprocess_image_hls(plate_img, device)
-            logits = crnn_model(x)  # (T, 1, C)
+            logits = crnn_model(x)
 
             # Decode text
             text = ctc_greedy_decode(logits)[0]
@@ -177,7 +178,7 @@ def process_plate_image(image_path):
             # Calculate confidence
             confidence = calculate_confidence(logits)
 
-            # Clean up text (remove underscores which are fallback characters)
+            # Clean up text
             text = text.replace("_", "")
 
             if len(text) == 0:
@@ -186,7 +187,8 @@ def process_plate_image(image_path):
                     "code": 6,
                     "message": STATUS_CODES[6],
                     "plate": None,
-                    "confidence": 0.0
+                    "confidence": 0.0,
+                    "bbox": {"x1": bbox[0], "y1": bbox[1], "x2": bbox[2], "y2": bbox[3]}
                 }
 
             return {
@@ -194,50 +196,138 @@ def process_plate_image(image_path):
                 "code": 0,
                 "message": STATUS_CODES[0],
                 "plate": text,
-                "confidence": confidence
+                "confidence": confidence,
+                "bbox": {"x1": bbox[0], "y1": bbox[1], "x2": bbox[2], "y2": bbox[3]}
             }
 
     except Exception as e:
-        print(f"Error processing image: {str(e)}")
+        print(f"Error processing image with CRNN: {str(e)}")
+        traceback.print_exc()
         return {
             "status": "ERROR",
             "code": 5,
             "message": f"{STATUS_CODES[5]}: {str(e)}",
             "plate": None,
-            "confidence": 0.0
+            "confidence": 0.0,
+            "bbox": None
+        }
+
+
+def process_plate_image_ocr(image_path):
+    """
+    Process uploaded image using YOLO + EasyOCR pipeline
+
+    Returns:
+        dict: Result dictionary with status, code, plate, confidence, and bbox
+    """
+    try:
+        # Read image
+        img = cv2.imread(image_path)
+
+        if img is None:
+            return {
+                "status": "ERROR",
+                "code": 7,
+                "message": STATUS_CODES[7],
+                "plate": None,
+                "confidence": 0.0,
+                "bbox": None
+            }
+
+        # Detect plate using YOLO
+        plate_img, bbox = get_box(img, yolo_model, conf=0.25)
+
+        if plate_img is None or bbox is None:
+            return {
+                "status": "ERROR",
+                "code": 4,
+                "message": STATUS_CODES[4],
+                "plate": None,
+                "confidence": 0.0,
+                "bbox": None
+            }
+
+        # Apply perspective transformation
+        transformed = get_perspective_transform(plate_img)
+
+        if transformed is None:
+            # Fallback to original plate if transform fails
+            print("Perspective transform failed, using original plate")
+            transformed = plate_img
+
+        # Enhance for OCR
+        enhanced = enhance_for_ocr(transformed)
+
+        # Recognize text using EasyOCR
+        text, confidence = ocr_processor.read_text_with_confidence(enhanced)
+
+        if len(text) == 0:
+            return {
+                "status": "ERROR",
+                "code": 6,
+                "message": STATUS_CODES[6],
+                "plate": None,
+                "confidence": 0.0,
+                "bbox": {"x1": bbox[0], "y1": bbox[1], "x2": bbox[2], "y2": bbox[3]}
+            }
+
+        return {
+            "status": "OK",
+            "code": 0,
+            "message": STATUS_CODES[0],
+            "plate": text,
+            "confidence": round(confidence, 2),
+            "bbox": {"x1": bbox[0], "y1": bbox[1], "x2": bbox[2], "y2": bbox[3]}
+        }
+
+    except Exception as e:
+        print(f"Error processing image with OCR: {str(e)}")
+        traceback.print_exc()
+        return {
+            "status": "ERROR",
+            "code": 5,
+            "message": f"{STATUS_CODES[5]}: {str(e)}",
+            "plate": None,
+            "confidence": 0.0,
+            "bbox": None
         }
 
 
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    models_loaded = yolo_model is not None and crnn_model is not None
+    models_loaded = yolo_model is not None and ocr_processor is not None
+    crnn_available = crnn_model is not None
+
     return jsonify({
         "status": "OK" if models_loaded else "ERROR",
-        "models_loaded": models_loaded,
+        "yolo_loaded": yolo_model is not None,
+        "crnn_loaded": crnn_available,
+        "ocr_loaded": ocr_processor is not None,
         "device": str(device) if device else "unknown"
     })
 
 
-@app.route('/recognize', methods=['POST'])
-def recognize_plate():
+@app.route('/recognize_crnn', methods=['POST'])
+def recognize_plate_crnn():
     """
-    Main endpoint for car plate recognition
+    CRNN-based plate recognition endpoint
 
     Expects:
         - multipart/form-data with 'image' field containing the image file
 
     Returns:
-        JSON response with status, code, plate, and confidence
+        JSON response with status, code, plate, confidence, and bbox
     """
-    # Check if models are loaded
+    # Check if CRNN model is loaded
     if yolo_model is None or crnn_model is None:
         return jsonify({
             "status": "ERROR",
             "code": 8,
-            "message": STATUS_CODES[8],
+            "message": "CRNN model not loaded",
             "plate": None,
-            "confidence": 0.0
+            "confidence": 0.0,
+            "bbox": None
         }), 503
 
     # Check if file is in request
@@ -247,29 +337,30 @@ def recognize_plate():
             "code": 1,
             "message": STATUS_CODES[1],
             "plate": None,
-            "confidence": 0.0
+            "confidence": 0.0,
+            "bbox": None
         }), 400
 
     file = request.files['image']
 
-    # Check if file is selected
     if file.filename == '':
         return jsonify({
             "status": "ERROR",
             "code": 1,
             "message": STATUS_CODES[1],
             "plate": None,
-            "confidence": 0.0
+            "confidence": 0.0,
+            "bbox": None
         }), 400
 
-    # Check file extension
     if not allowed_file(file.filename):
         return jsonify({
             "status": "ERROR",
             "code": 2,
             "message": STATUS_CODES[2],
             "plate": None,
-            "confidence": 0.0
+            "confidence": 0.0,
+            "bbox": None
         }), 400
 
     try:
@@ -279,7 +370,7 @@ def recognize_plate():
         file.save(filepath)
 
         # Process image
-        result = process_plate_image(filepath)
+        result = process_plate_image_crnn(filepath)
 
         # Clean up uploaded file
         try:
@@ -287,9 +378,7 @@ def recognize_plate():
         except:
             pass
 
-        # Return appropriate status code
         http_status = 200 if result["status"] == "OK" else 400
-
         return jsonify(result), http_status
 
     except Exception as e:
@@ -298,7 +387,93 @@ def recognize_plate():
             "code": 5,
             "message": f"Server error: {str(e)}",
             "plate": None,
-            "confidence": 0.0
+            "confidence": 0.0,
+            "bbox": None
+        }), 500
+
+
+@app.route('/recognize', methods=['POST'])
+@app.route('/recognize_ocr', methods=['POST'])
+def recognize_plate_ocr():
+    """
+    EasyOCR-based plate recognition endpoint (default)
+
+    Expects:
+        - multipart/form-data with 'image' field containing the image file
+
+    Returns:
+        JSON response with status, code, plate, confidence, and bbox
+    """
+    # Check if models are loaded
+    if yolo_model is None or ocr_processor is None:
+        return jsonify({
+            "status": "ERROR",
+            "code": 8,
+            "message": STATUS_CODES[8],
+            "plate": None,
+            "confidence": 0.0,
+            "bbox": None
+        }), 503
+
+    # Check if file is in request
+    if 'image' not in request.files:
+        return jsonify({
+            "status": "ERROR",
+            "code": 1,
+            "message": STATUS_CODES[1],
+            "plate": None,
+            "confidence": 0.0,
+            "bbox": None
+        }), 400
+
+    file = request.files['image']
+
+    if file.filename == '':
+        return jsonify({
+            "status": "ERROR",
+            "code": 1,
+            "message": STATUS_CODES[1],
+            "plate": None,
+            "confidence": 0.0,
+            "bbox": None
+        }), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({
+            "status": "ERROR",
+            "code": 2,
+            "message": STATUS_CODES[2],
+            "plate": None,
+            "confidence": 0.0,
+            "bbox": None
+        }), 400
+
+    try:
+        # Save uploaded file
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        # Process image
+        result = process_plate_image_ocr(filepath)
+
+        # Clean up uploaded file
+        try:
+            os.remove(filepath)
+        except:
+            pass
+
+        http_status = 200 if result["status"] == "OK" else 400
+        return jsonify(result), http_status
+
+    except Exception as e:
+        return jsonify({
+            "status": "ERROR",
+            "code": 5,
+            "message": f"Server error: {str(e)}",
+            "plate": None,
+            "confidence": 0.0,
+            "bbox": None
         }), 500
 
 
@@ -310,12 +485,13 @@ def file_too_large(e):
         "code": 3,
         "message": STATUS_CODES[3],
         "plate": None,
-        "confidence": 0.0
+        "confidence": 0.0,
+        "bbox": None
     }), 413
 
 
 if __name__ == '__main__':
-    print("Initializing ALPR Flask Application...")
+    print("Initializing Enhanced ALPR Flask Application...")
 
     # Initialize models
     if initialize_models():
