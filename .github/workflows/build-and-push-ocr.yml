@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/ocr/**'
       - '.github/workflows/build-and-push-ocr.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -35,3 +36,11 @@ jobs:
           docker build -t $ECR_REPOSITORY:latest ./src/ocr/src/
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster diia-parking-ctrl-dev-cluster \
+            --service ocr-service \
+            --force-new-deployment \
+            --region ${{ secrets.AWS_REGION }}

@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/geo-service/**'
       - '.github/workflows/build-and-push-geo.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -35,3 +36,11 @@ jobs:
           docker build -t $ECR_REPOSITORY:latest ./src/geo-service/diia-parking-ctrl.geo-service/
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster diia-parking-ctrl-dev-cluster \
+            --service geo-service \
+            --force-new-deployment \
+            --region ${{ secrets.AWS_REGION }}
