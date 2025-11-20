@@ -53,7 +53,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-app.include_router(health_router, prefix="/api/v1", tags=["Health"])
+app.include_router(health_router, tags=["Health"])
 app.include_router(violations_router, prefix="/api/v1/violations", tags=["Violations"])
 app.include_router(users_router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(ocr_router, prefix="/api/v1/ocr", tags=["OCR"])
