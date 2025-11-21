@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.All;
+});
 
 builder.Services.AddHttpClient<IOsmOverpassClient, OsmOverpassClient>();
 builder.Services.AddHttpClient("osmTiles", client =>
@@ -23,6 +28,7 @@ builder.Services.AddSingleton<IMapRenderingService, OsmTileMapRenderingService>(
 var app = builder.Build();
 
 
+app.UseHttpLogging();
 app.UseSwagger();
 app.UseSwaggerUI();
 
