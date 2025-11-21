@@ -182,6 +182,7 @@ async def submit_violation(
         user_id=current_user["id"],
         violation_reason=request.violation_reason,
         violation_code=request.violation_code,
+        violation_type=request.violation_type,
         notes=request.notes,
     )
     return result
