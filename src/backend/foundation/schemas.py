@@ -163,6 +163,15 @@ class HealthCheckResponse(BaseModel):
     redis: str
 
 
+class ExternalServiceHealthResponse(BaseModel):
+    status: str
+    service: str
+    service_url: str
+    service_status: str
+    service_response: Optional[dict] = None
+    timestamp: datetime
+
+
 class AnalyzeParkingRequest(BaseModel):
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
