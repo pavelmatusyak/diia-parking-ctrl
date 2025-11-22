@@ -6,6 +6,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { authenticateAnonymous } from '@/services/api';
 
 export default function HomeScreen() {
     const colorScheme = useColorScheme();
@@ -17,26 +18,22 @@ export default function HomeScreen() {
     };
 
     useEffect(() => {
-        const checkBackend = async () => {
+        const initializeApp = async () => {
             const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
             if (!backendUrl) {
                 setBackendStatus('Бекенд не налаштовано ❌');
                 return;
             }
             try {
-                const healthUrl = `${backendUrl}/health`;
-                const response = await fetch(healthUrl);
-                if (response.ok) {
-                    setBackendStatus('Бекенд доступний ✅');
-                } else {
-                    setBackendStatus(`Бекенд недоступний ❌ (${response.status})`);
-                }
+                // Step 0: Authenticate anonymously
+                await authenticateAnonymous();
+                setBackendStatus('Бекенд доступний ✅');
             } catch (err) {
                 setBackendStatus('Помилка підключення до бекенду ❌');
                 console.error('Помилка підключення до бекенду:', err);
             }
         };
-        checkBackend();
+        initializeApp();
     }, []);
 
     return (

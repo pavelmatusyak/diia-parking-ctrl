@@ -3,14 +3,20 @@ import { MAPTILER_TILE_URL } from '@/constants/maptiler';
 import { ThemedView } from '@/constants/themed-view';
 import { useReactNativeMaps } from '@/hooks/use-react-native-maps';
 import { submitViolationDetails } from '@/services/api';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useViolationContext } from '@/context/violation-context';
 
 const REASONS = [
-    { id: 'no_stopping_zone', title: 'Стоянка або зупинка під знаком', description: 'Наприклад, біля знаків 3.34‑3.38 або під знаком «Зупинка заборонена».' },
-    { id: 'crosswalk_blocked', title: 'Перекрито пішохідний перехід / тротуар', description: 'Авто заважає пішоходам або обмежує огляд на переході.' },
-    { id: 'disabled_spot', title: 'Стоянка на місці для людей з інвалідністю', description: 'Місце позначене відповідною розміткою або знаком.' },
+    { id: 'no_stopping_zone', title: 'Стоянка під знаком заборони', description: 'Знак 3.34 «Зупинку заборонено»' },
+    { id: 'crosswalk_blocked', title: 'Перешкода пішоходам', description: 'Паркування на переході або тротуарі' },
+    { id: 'disabled_spot', title: 'Місце для людей з інвалідністю', description: 'Без відповідного посвідчення' },
+    { id: 'intersection', title: 'Ближче 10м до перехрестя', description: 'Обмеження оглядовості' },
+    { id: 'other', title: 'Інше порушення', description: 'Опишіть деталі в коментарі' },
 ];
 
 export default function ViolationDetailsScreen() {
@@ -20,10 +26,16 @@ export default function ViolationDetailsScreen() {
     const longitude = params.longitude ? Number(params.longitude) : undefined;
     const hasLocation = Number.isFinite(latitude) && Number.isFinite(longitude);
 
-    const [selectedReason, setSelectedReason] = useState<string | null>(REASONS[0]?.id ?? null);
+    const { signsPhotos, addSignPhoto, confirmPhoto } = useViolationContext();
+    const [selectedReason, setSelectedReason] = useState<string | null>(null);
     const [hasSigns, setHasSigns] = useState<'yes' | 'no' | null>(null);
     const [note, setNote] = useState('');
     const [sending, setSending] = useState(false);
+
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
+    const insets = useSafeAreaInsets();
+
     const mapComponents = useReactNativeMaps();
     const MapViewComponent = mapComponents?.MapView;
     const MarkerComponent = mapComponents?.Marker;
@@ -32,39 +44,37 @@ export default function ViolationDetailsScreen() {
 
     const activeReason = useMemo(() => REASONS.find(r => r.id === selectedReason), [selectedReason]);
 
+    const handleAddSignPhoto = () => {
+        router.push('/signs-camera');
+    };
+
     const handleSubmit = async () => {
         if (!reportId) {
-            alert('Відсутній ідентифікатор звіту. Спробуйте зробити фото ще раз.');
-            router.replace('/(tabs)');
+            Alert.alert('Помилка', 'Відсутній ID звіту');
             return;
         }
         if (!selectedReason) {
-            alert('Будь ласка, оберіть причину правопорушення');
+            Alert.alert('Увага', 'Оберіть причину порушення');
             return;
         }
         if (hasSigns === null) {
-            alert('Підтвердіть наявність знаків або розмітки');
+            Alert.alert('Увага', 'Вкажіть наявність знаків');
+            return;
+        }
+        if (hasSigns === 'yes' && signsPhotos.length === 0) {
+            Alert.alert('Увага', 'Ви вказали наявність знаків, але не додали фото');
+            return;
+        }
+
+        // Timer Logic Check
+        if (hasSigns === 'no' && !confirmPhoto) {
+            router.push('/waiting-confirmation');
             return;
         }
 
         setSending(true);
         try {
-            console.log('[UI] Початок відправки штрафу до поліції...');
-            
-            const violationId = params.violationId as string | undefined || reportId;
-            if (!violationId) {
-                throw new Error('Відсутній ідентифікатор порушення');
-            }
-            
-            console.log('[UI] Викликаємо submitViolationDetails з параметрами:', {
-                violationId,
-                reason: selectedReason,
-                hasSupportingSigns: hasSigns === 'yes',
-                note: note.trim() || undefined,
-                latitude,
-                longitude,
-            });
-            
+            const violationId = params.violationId as string || reportId;
             await submitViolationDetails({
                 violationId,
                 reason: selectedReason,
@@ -72,59 +82,28 @@ export default function ViolationDetailsScreen() {
                 note: note.trim() || undefined,
                 latitude,
                 longitude,
+                confirmPhotoUri: confirmPhoto || undefined,
             });
-            
-            console.log('[UI] ✅ submitViolationDetails завершено успішно. Переходимо до екрану успіху.');
             router.replace('/violation-success');
         } catch (error) {
-            console.error('[UI] ❌ Помилка при відправці штрафу:', error);
-            let message = 'Не вдалося відправити штраф. Спробуйте ще раз.';
-            
-            if (error instanceof Error) {
-                message = error.message;
-                // Якщо помилка про відсутність підключення
-                if (error.message.includes('підключення') || error.message.includes('інтернет')) {
-                    message = 'Немає підключення до інтернету. Штраф не відправлено. Перевірте з\'єднання та спробуйте ще раз.';
-                }
-                // Якщо помилка про відсутність відповіді від сервера
-                if (error.message.includes('не отримано відповіді') || error.message.includes('немає відповіді')) {
-                    message = 'Сервер не відповідає. Штраф не відправлено. Перевірте підключення до інтернету та спробуйте ще раз.';
-                }
-                // Якщо штраф не відправлено до поліції
-                if (error.message.includes('не відправлено до поліції')) {
-                    message = 'Штраф не відправлено до поліції. Спробуйте ще раз.';
-                }
-            }
-            
-            console.log('[UI] Показуємо Alert з помилкою:', message);
-            Alert.alert('Помилка відправки', message);
-            // НЕ переходимо далі - залишаємось на цій сторінці
-            console.log('[UI] Залишаємось на поточній сторінці - перехід не виконано');
+            console.error(error);
+            Alert.alert('Помилка', 'Не вдалося відправити дані');
         } finally {
             setSending(false);
-            console.log('[UI] setSending(false) - кнопка знову активна');
         }
     };
 
     const renderCustomTile = () => {
-        if (!canRenderTileOverlay || !UrlTileComponent || !MAPTILER_TILE_URL) {
-            return null;
-        }
+        if (!canRenderTileOverlay || !UrlTileComponent || !MAPTILER_TILE_URL) return null;
         const Tile = UrlTileComponent;
         return <Tile urlTemplate={MAPTILER_TILE_URL} zIndex={0} maximumZ={20} tileSize={512} />;
     };
 
     return (
-        <ThemedView style={styles.container}>
-            <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+            <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}>
 
-                <ThemedText type="title" style={styles.title}>
-                    Виглядає так, що авто дійсно припарковане не за правилами
-                </ThemedText>
-                <ThemedText style={styles.subtitle}>
-                    Оберіть причину правопорушення та підтвердіть чи є знаки/розмітка
-                </ThemedText>
-
+                {/* Map Header */}
                 {MapViewComponent && MarkerComponent && hasLocation && (
                     <View style={styles.mapContainer}>
                         <MapViewComponent
@@ -138,102 +117,191 @@ export default function ViolationDetailsScreen() {
                             }}
                             scrollEnabled={false}
                             zoomEnabled={false}
-                            pitchEnabled={false}
-                            rotateEnabled={false}
                         >
                             {renderCustomTile()}
                             <MarkerComponent coordinate={{ latitude: latitude!, longitude: longitude! }} />
                         </MapViewComponent>
+                        <View style={styles.mapOverlay} />
                     </View>
                 )}
 
-                <ThemedText style={styles.blockTitle}>Оберіть причину правопорушення</ThemedText>
-                {REASONS.map(r => {
-                    const isActive = r.id === selectedReason;
-                    return (
-                        <TouchableOpacity
-                            key={r.id}
-                            style={[styles.card, isActive && styles.cardActive]}
-                            onPress={() => setSelectedReason(r.id)}
-                        >
-                            <ThemedText style={[styles.cardTitle, isActive && styles.cardTitleActive]}>{r.title}</ThemedText>
-                            <ThemedText style={styles.cardDescription}>{r.description}</ThemedText>
-                        </TouchableOpacity>
-                    );
-                })}
+                <View style={styles.content}>
+                    <ThemedText type="title" style={styles.pageTitle}>Деталі порушення</ThemedText>
 
-                <ThemedText style={styles.blockTitle}>
-                    Чи є поруч знаки або розмітка котрі підтверджують правопорушення?
-                </ThemedText>
-                <View style={styles.answerRow}>
-                    {['yes', 'no'].map(a => {
-                        const isActive = hasSigns === a;
-                        return (
-                            <TouchableOpacity
-                                key={a}
-                                style={[styles.answerButton, isActive && styles.answerButtonActive]}
-                                onPress={() => setHasSigns(a as 'yes' | 'no')}
-                            >
-                                <ThemedText style={[styles.answerText, isActive && styles.answerTextActive]}>
-                                    {a === 'yes' ? 'Так' : 'Ні'}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        );
-                    })}
+                    {/* Reason Section */}
+                    <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Причина</ThemedText>
+                    <View style={styles.reasonsGrid}>
+                        {REASONS.map(r => {
+                            const isActive = r.id === selectedReason;
+                            return (
+                                <TouchableOpacity
+                                    key={r.id}
+                                    style={[styles.reasonCard, isActive && { borderColor: theme.tint, backgroundColor: theme.tint + '10' }]}
+                                    onPress={() => setSelectedReason(r.id)}
+                                >
+                                    <ThemedText style={[styles.reasonTitle, isActive && { color: theme.tint }]}>{r.title}</ThemedText>
+                                    <ThemedText style={styles.reasonDesc}>{r.description}</ThemedText>
+                                    {isActive && (
+                                        <View style={[styles.checkIcon, { backgroundColor: theme.tint }]}>
+                                            <Ionicons name="checkmark" size={12} color="#fff" />
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    {/* Signs Section */}
+                    <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Знаки та розмітка</ThemedText>
+                    <View style={styles.signsContainer}>
+                        <ThemedText style={styles.questionText}>Чи є поруч знаки, що забороняють паркування?</ThemedText>
+                        <View style={styles.toggleRow}>
+                            {['yes', 'no'].map(opt => {
+                                const isSelected = hasSigns === opt;
+                                return (
+                                    <TouchableOpacity
+                                        key={opt}
+                                        style={[
+                                            styles.toggleButton,
+                                            isSelected && { backgroundColor: theme.tint, borderColor: theme.tint }
+                                        ]}
+                                        onPress={() => setHasSigns(opt as 'yes' | 'no')}
+                                    >
+                                        <ThemedText style={[styles.toggleText, isSelected && { color: '#fff' }]}>
+                                            {opt === 'yes' ? 'Так, є знаки' : 'Ні, знаків немає'}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+
+                        {hasSigns === 'yes' && (
+                            <View style={styles.photoSection}>
+                                <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddSignPhoto}>
+                                    <Ionicons name="camera" size={24} color={theme.tint} />
+                                    <ThemedText style={[styles.addPhotoText, { color: theme.tint }]}>
+                                        {signsPhotos.length > 0 ? `Додано фото: ${signsPhotos.length}` : 'Додати фото знаку'}
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Note Section */}
+                    <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Коментар</ThemedText>
+                    <TextInput
+                        style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+                        placeholder="Додаткові деталі..."
+                        placeholderTextColor="#999"
+                        multiline
+                        value={note}
+                        onChangeText={setNote}
+                    />
                 </View>
-
-                {activeReason && (
-                    <>
-                        <ThemedText style={styles.blockTitle}>Додаткові деталі (необовʼязково)</ThemedText>
-                        <TextInput
-                            style={styles.noteInput}
-                            multiline
-                            numberOfLines={4}
-                            placeholder="Наприклад: «Авто перекриває два місця та пішохідний перехід»"
-                            value={note}
-                            onChangeText={setNote}
-                            textAlignVertical="top"
-                        />
-                    </>
-                )}
-
             </ScrollView>
 
-            <View style={styles.bottomBar}>
+            {/* Footer */}
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 20, backgroundColor: theme.background }]}>
                 <TouchableOpacity
-                    style={[styles.nextBtn, sending ? styles.nextBtnDisabled : styles.nextBtnActive]}
+                    style={[styles.submitButton, { backgroundColor: theme.tint }, sending && styles.disabledButton]}
                     onPress={handleSubmit}
                     disabled={sending}
                 >
-                    {sending ? <ActivityIndicator color="#fff" /> : <ThemedText style={[styles.nextText, sending && styles.nextTextDisabled]}>Відправити до поліції</ThemedText>}
+                    {sending ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <ThemedText style={styles.submitButtonText}>Відправити звіт</ThemedText>
+                    )}
                 </TouchableOpacity>
             </View>
-        </ThemedView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#E9F2F8', paddingTop: 60, paddingHorizontal: 20 },
-    title: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
-    subtitle: { fontSize: 14, color: '#1F1F1F', marginBottom: 16 },
-    mapContainer: { height: 160, borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
+    container: { flex: 1 },
+    scrollContent: { paddingTop: 0 },
+    mapContainer: { height: 200, width: '100%' },
     map: { flex: 1 },
-    blockTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
-    card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#DCDCDC', gap: 4 },
-    cardActive: { borderColor: '#000', backgroundColor: '#D9E9F5' },
-    cardTitle: { fontSize: 15, fontWeight: '600', color: '#1F1F1F' },
-    cardTitleActive: { color: '#000' },
-    cardDescription: { fontSize: 14, color: '#6B6B6B' },
-    answerRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-    answerButton: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#DCDCDC', alignItems: 'center' },
-    answerButtonActive: { borderColor: '#000', backgroundColor: '#D9E9F5' },
-    answerText: { fontSize: 15, fontWeight: '600', color: '#1F1F1F' },
-    answerTextActive: { color: '#000' },
-    noteInput: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#DCDCDC', padding: 12, fontSize: 14, lineHeight: 18, marginBottom: 16 },
-    bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: '#E9F2F8' },
-    nextBtn: { paddingVertical: 14, borderRadius: 30, alignItems: 'center' },
-    nextBtnActive: { backgroundColor: '#000' },
-    nextBtnDisabled: { backgroundColor: '#CBD4DB' },
-    nextText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-    nextTextDisabled: { color: '#808080' },
+    mapOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 100%)' }, // Gradient simulation
+
+    content: { padding: 20, marginTop: -20, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: '#fff' }, // Overlap map
+    pageTitle: { fontSize: 24, marginBottom: 24 },
+    sectionTitle: { fontSize: 18, marginBottom: 12, marginTop: 8 },
+
+    reasonsGrid: { gap: 12, marginBottom: 24 },
+    reasonCard: {
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E5E5EA',
+        backgroundColor: '#fff',
+        position: 'relative'
+    },
+    reasonTitle: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
+    reasonDesc: { fontSize: 14, color: '#8E8E93' },
+    checkIcon: { position: 'absolute', top: 16, right: 16, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+
+    signsContainer: { marginBottom: 24 },
+    questionText: { fontSize: 15, color: '#666', marginBottom: 12 },
+    toggleRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+    toggleButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E5EA',
+        alignItems: 'center'
+    },
+    toggleText: { fontWeight: '600' },
+
+    photoSection: { marginTop: 8 },
+    addPhotoButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: '#F2F2F7',
+        gap: 8
+    },
+    addPhotoText: { fontWeight: '600', fontSize: 15 },
+
+    input: {
+        height: 100,
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        textAlignVertical: 'top'
+    },
+
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E5EA',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 5
+    },
+    submitButton: {
+        height: 56,
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 5
+    },
+    disabledButton: { opacity: 0.7 },
+    submitButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' }
 });

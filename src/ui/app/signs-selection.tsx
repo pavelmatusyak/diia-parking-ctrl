@@ -26,11 +26,12 @@ export default function SignsSelectionScreen() {
         if (localSelection.length === 0) return;
         setSelectedSigns(localSelection);
 
-        // Логіка маршруту
-        if (localSelection.length === 1 && localSelection[0] === 'no_parking') {
+        // If "no_parking" is selected, we might want a photo of it
+        if (localSelection.includes('no_parking')) {
             router.push('/signs-camera');
         } else {
-            router.push('/signs-camera2');
+            // For other signs, proceed to parking analysis
+            router.push('/parking-analysis');
         }
     };
 
