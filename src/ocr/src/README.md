@@ -114,6 +114,25 @@ response = requests.post(url, files=files)
 print(response.json())
 ```
 
+3. Photo Check
+POST /is_running
+
+Receives two photos (photo1 and photo2) as multipart/form-data and returns a random boolean (true or false).
+
+Response (success):
+```json
+{
+  "result": true
+}
+```
+
+Response (missing files):
+```json
+{
+  "error": "Missing photo1 or photo2"
+}
+```
+
 ### Response Format
 
 #### Success Response (200)
