@@ -82,3 +82,203 @@ On the generated PDF report there should be
 
 We don't need any openai chatbots - this logic can be removed. 
 
+Step 1: Get anonym login
+```bash
+curl -X 'POST' \
+  'http://localhost:8021/api/v1/auth/anonymous' \
+  -H 'accept: application/json' \
+  -d ''
+```
+
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzkyYmM5MS1mZDQyLTQ4NmMtOGU4My0zYmQ3NmQwMGNiYjMiLCJkaWlhX3VzZXJfaWQiOiJhbm9uLWIzYjdmYTlkIiwibmFtZSI6Ilx1MDQyMlx1MDQzNVx1MDQ0MVx1MDQ0Mlx1MDQzZVx1MDQzMlx1MDQzOFx1MDQzOSBcdTA0MWFcdTA0M2VcdTA0NDBcdTA0MzhcdTA0NDFcdTA0NDJcdTA0NDNcdTA0MzJcdTA0MzBcdTA0NDciLCJpc19hbm9ueW1vdXMiOnRydWUsImV4cCI6MTc2MzgwNTEwN30.Qn5nOAltFR2ev0ekOHcjVIxF6YRHLpqBo3hHx3pDTU4",
+  "token_type": "bearer",
+  "user_id": "8792bc91-fd42-486c-8e83-3bd76d00cbb3",
+  "diia_user_id": "anon-b3b7fa9d",
+  "name": "Тестовий Користувач",
+  "is_anonymous": true
+}
+```
+
+
+STEP 2: CREATE VIOLATION STEP
+
+```bash
+curl -X 'POST' \
+  'http://localhost:8021/api/v1/violations' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzkyYmM5MS1mZDQyLTQ4NmMtOGU4My0zYmQ3NmQwMGNiYjMiLCJkaWlhX3VzZXJfaWQiOiJhbm9uLWIzYjdmYTlkIiwibmFtZSI6Ilx1MDQyMlx1MDQzNVx1MDQ0MVx1MDQ0Mlx1MDQzZVx1MDQzMlx1MDQzOFx1MDQzOSBcdTA0MWFcdTA0M2VcdTA0NDBcdTA0MzhcdTA0NDFcdTA0NDJcdTA0NDNcdTA0MzJcdTA0MzBcdTA0NDciLCJpc19hbm9ueW1vdXMiOnRydWUsImV4cCI6MTc2MzgwNTEwN30.Qn5nOAltFR2ev0ekOHcjVIxF6YRHLpqBo3hHx3pDTU4' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "latitude": -90,
+  "longitude": -180,
+  "notes": "THIS WILL BE ADDRESS STREET TEXT"
+}'
+```
+
+```json
+{
+  "id": "662b59ea-c426-454e-87f3-23eb5f2349dc",
+  "user_id": "8792bc91-fd42-486c-8e83-3bd76d00cbb3",
+  "status": "draft",
+  "license_plate": null,
+  "license_plate_confidence": null,
+  "latitude": -90,
+  "longitude": -180,
+  "address": null,
+  "created_at": "2025-11-22T09:22:42.482739",
+  "verified_at": null,
+  "submitted_at": null,
+  "resolved_at": null,
+  "verification_time_seconds": null,
+  "police_case_number": null,
+  "notes": "THIS WILL BE ADDRESS STREET TEXT",
+  "violation_reason": null,
+  "violation_code": null,
+  "violation_type": null,
+  "timer_started_at": null,
+  "has_road_sign_photo": false
+}
+```
+
+
+Remember ID - this is violation id used for all other requests
+
+```bash
+curl -X 'POST' \
+  'http://localhost:8021/api/v1/violations/662b59ea-c426-454e-87f3-23eb5f2349dc/photos?photo_type=initial' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzkyYmM5MS1mZDQyLTQ4NmMtOGU4My0zYmQ3NmQwMGNiYjMiLCJkaWlhX3VzZXJfaWQiOiJhbm9uLWIzYjdmYTlkIiwibmFtZSI6Ilx1MDQyMlx1MDQzNVx1MDQ0MVx1MDQ0Mlx1MDQzZVx1MDQzMlx1MDQzOFx1MDQzOSBcdTA0MWFcdTA0M2VcdTA0NDBcdTA0MzhcdTA0NDFcdTA0NDJcdTA0NDNcdTA0MzJcdTA0MzBcdTA0NDciLCJpc19hbm9ueW1vdXMiOnRydWUsImV4cCI6MTc2MzgwNTEwN30.Qn5nOAltFR2ev0ekOHcjVIxF6YRHLpqBo3hHx3pDTU4' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'file=@img_1.png;type=image/png'
+```
+
+
+```bash
+curl -X 'POST' \
+  'http://localhost:8021/api/v1/violations/662b59ea-c426-454e-87f3-23eb5f2349dc/photos?photo_type=initial' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzkyYmM5MS1mZDQyLTQ4NmMtOGU4My0zYmQ3NmQwMGNiYjMiLCJkaWlhX3VzZXJfaWQiOiJhbm9uLWIzYjdmYTlkIiwibmFtZSI6Ilx1MDQyMlx1MDQzNVx1MDQ0MVx1MDQ0Mlx1MDQzZVx1MDQzMlx1MDQzOFx1MDQzOSBcdTA0MWFcdTA0M2VcdTA0NDBcdTA0MzhcdTA0NDFcdTA0NDJcdTA0NDNcdTA0MzJcdTA0MzBcdTA0NDciLCJpc19hbm9ueW1vdXMiOnRydWUsImV4cCI6MTc2MzgwNTEwN30.Qn5nOAltFR2ev0ekOHcjVIxF6YRHLpqBo3hHx3pDTU4' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'file=@img_1.png;type=image/png'
+```
+
+```json
+{
+  "id": "55cf7ffb-45f6-4e2c-a2dd-1a4b5335568d",
+  "violation_id": "662b59ea-c426-454e-87f3-23eb5f2349dc",
+  "photo_type": "initial",
+  "storage_url": "http://localhost:8000/storage/violations/662b59ea-c426-454e-87f3-23eb5f2349dc/20251122-093350-e707db51-img_1.png",
+  "file_size": 54612841,
+  "mime_type": "image/png",
+  "latitude": null,
+  "longitude": null,
+  "captured_at": null,
+  "uploaded_at": "2025-11-22T09:33:50.688628",
+  "ocr_results": {
+    "bbox": {
+      "x1": 403,
+      "x2": 562,
+      "y1": 1389,
+      "y2": 1506
+    },
+    "code": 0,
+    "confidence": 0.96,
+    "message": "Success",
+    "plate": "KA1488XI",
+    "status": "OK"
+  }
+}
+```
+
+If no plate or confidence is < 0.3 -> Fronetnd should say "не вдалося рохпізнати"
+
+
+
+If all good FE does 
+
+```bash
+curl -X 'POST' \
+  'http://localhost:8021/api/v1/parking-analysis/analyze' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzkyYmM5MS1mZDQyLTQ4NmMtOGU4My0zYmQ3NmQwMGNiYjMiLCJkaWlhX3VzZXJfaWQiOiJhbm9uLWIzYjdmYTlkIiwibmFtZSI6Ilx1MDQyMlx1MDQzNVx1MDQ0MVx1MDQ0Mlx1MDQzZVx1MDQzMlx1MDQzOFx1MDQzOSBcdTA0MWFcdTA0M2VcdTA0NDBcdTA0MzhcdTA0NDFcdTA0NDJcdTA0NDNcdTA0MzJcdTA0MzBcdTA0NDciLCJpc19hbm9ueW1vdXMiOnRydWUsImV4cCI6MTc2MzgwNTEwN30.Qn5nOAltFR2ev0ekOHcjVIxF6YRHLpqBo3hHx3pDTU4' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "violation_id": "662b59ea-c426-454e-87f3-23eb5f2349dc"
+}'
+```
+
+```json
+{
+  "isViolation": false,
+  "overallViolationConfidence": 0,
+  "likelyArticles": [],
+  "probabilityBreakdown": {
+    "railway_crossing": 0,
+    "tram_track": 0,
+    "bridge_or_tunnel": 0,
+    "pedestrian_crossing_10m": 0,
+    "intersection_10m": 0,
+    "narrowing_less_than_3m": 0,
+    "bus_stop_30m": 0,
+    "driveway_exit_10m": 0,
+    "sidewalk": 0,
+    "pedestrian_zone": 0,
+    "cycleway": 0,
+    "blocking_traffic_signal": 0,
+    "blocking_roadway": 0
+  },
+  "reasons": [
+    {
+      "source": "rule_engine",
+      "detail": "Rule-engine не виявив жодних порушень або об'єктів поблизу."
+    },
+    {
+      "source": "map_analysis",
+      "detail": "На статичній карті немає ознак наявності залізничного переїзду, трамвайних колій, мосту, тунелю, пішохідного переходу, перехрестя, звуження проїжджої частини, зупинки транспорту, виїзду з прилеглої території, тротуару, пішохідної зони, велодоріжки, світлофора чи дорожніх знаків, а також блокування проїзду."
+    }
+  ],
+  "crossChecks": {
+    "map_vs_photo": "не застосовується (немає фото)",
+    "map_vs_rule_engine": "Дані rule-engine та карта узгоджуються: жодних ознак порушень не виявлено.",
+    "photo_vs_rule_engine": "не застосовується (немає фото)"
+  },
+  "finalHumanReadableConclusion": "Порушень правил дорожнього руху на основі наданих даних не виявлено. Ознак порушень за жодним із критеріїв немає."
+}
+```
+
+
+```bash
+curl -X 'GET' \
+  'http://localhost:8021/api/v1/violations/662b59ea-c426-454e-87f3-23eb5f2349dc/evidence' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NzkyYmM5MS1mZDQyLTQ4NmMtOGU4My0zYmQ3NmQwMGNiYjMiLCJkaWlhX3VzZXJfaWQiOiJhbm9uLWIzYjdmYTlkIiwibmFtZSI6Ilx1MDQyMlx1MDQzNVx1MDQ0MVx1MDQ0Mlx1MDQzZVx1MDQzMlx1MDQzOFx1MDQzOSBcdTA0MWFcdTA0M2VcdTA0NDBcdTA0MzhcdTA0NDFcdTA0NDJcdTA0NDNcdTA0MzJcdTA0MzBcdTA0NDciLCJpc19hbm9ueW1vdXMiOnRydWUsImV4cCI6MTc2MzgwNTEwN30.Qn5nOAltFR2ev0ekOHcjVIxF6YRHLpqBo3hHx3pDTU4'
+```
+
+
+```json
+{
+  "violation_id": "662b59ea-c426-454e-87f3-23eb5f2349dc",
+  "license_plate": "KA1488XI",
+  "location": {
+    "latitude": -90,
+    "longitude": -180,
+    "address": null
+  },
+  "photos": [
+    {
+      "id": "55cf7ffb-45f6-4e2c-a2dd-1a4b5335568d",
+      "type": "initial",
+      "url": "http://localhost:8000/storage/violations/662b59ea-c426-454e-87f3-23eb5f2349dc/20251122-093350-e707db51-img_1.png",
+      "captured_at": null
+    }
+  ],
+  "verification_time_seconds": null,
+  "created_at": "2025-11-22T09:22:42.482739",
+  "verified_at": null
+}
+```
+
+ 
