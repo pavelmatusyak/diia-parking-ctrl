@@ -1,3 +1,5 @@
+import random
+
 from flask import Flask, request, jsonify
 import cv2
 import numpy as np
@@ -488,6 +490,21 @@ def file_too_large(e):
         "confidence": 0.0,
         "bbox": None
     }), 413
+
+
+@app.route("/is_running", methods=['POST'])
+def check_photos():
+    # Expect 2 files: photo1, photo2
+    if "photo1" not in request.files or "photo2" not in request.files:
+        return jsonify({"error": "Missing photo1 or photo2"}), 400
+
+    photo1 = request.files["photo1"]
+    photo2 = request.files["photo2"]
+
+    # Random True/False result
+    result = random.choice([True, False])
+
+    return jsonify({"result": result})
 
 
 if __name__ == '__main__':
