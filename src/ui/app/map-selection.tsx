@@ -3,33 +3,45 @@ import { MAPTILER_TILE_URL } from '@/constants/maptiler';
 import { ThemedView } from '@/constants/themed-view';
 import { useReactNativeMaps } from '@/hooks/use-react-native-maps';
 import { getCurrentLocation } from '@/services/location';
+import { Colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Image,
     Platform,
     StyleSheet,
-    TextInput,
     TouchableOpacity,
     View,
+    useColorScheme,
+    Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useViolationContext } from '@/context/violation-context';
+import { createViolation } from '@/services/api';
 
-const DESIGN_IMAGE_PATH = '/mnt/data/8d16a915-af93-4da1-a830-d37439f31a27.png';
+const { width } = Dimensions.get('window');
 
 export default function MapSelectionScreen() {
     const mapComponents = useReactNativeMaps();
     const MapView = mapComponents?.MapView;
     const Marker = mapComponents?.Marker;
     const UrlTile = mapComponents?.UrlTile;
+    const mapRef = useRef<any>(null);
+
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
+    const insets = useSafeAreaInsets();
+    const { setReportId } = useViolationContext();
 
     const [loading, setLoading] = useState(true);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [city, setCity] = useState<string>('');
     const [address, setAddress] = useState<string>('');
+    const [creating, setCreating] = useState(false);
 
     const reverseGeocode = useCallback(async (lat: number, lng: number) => {
         try {
@@ -85,26 +97,65 @@ export default function MapSelectionScreen() {
         await reverseGeocode(region.latitude, region.longitude);
     };
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (!selectedLocation) {
             Alert.alert('Помилка', 'Будь ласка, оберіть локацію на мапі');
             return;
         }
-        router.push({
-            pathname: '/plate-camera',
-            params: {
-                lat: selectedLocation.latitude.toString(),
-                lng: selectedLocation.longitude.toString(),
-                city,
-                address,
-            },
-        });
+
+        setCreating(true);
+        try {
+            // Step 1: Create violation with location
+            const violation = await createViolation(
+                selectedLocation.latitude,
+                selectedLocation.longitude,
+                address || `${city || 'Невідоме місто'}, ${selectedLocation.latitude.toFixed(6)}, ${selectedLocation.longitude.toFixed(6)}`
+            );
+
+            // Store violation ID in context
+            setReportId(violation.id);
+
+            // Navigate to plate camera with violation ID
+            router.push({
+                pathname: '/plate-camera',
+                params: {
+                    violationId: violation.id,
+                    lat: selectedLocation.latitude.toString(),
+                    lng: selectedLocation.longitude.toString(),
+                    city,
+                    address,
+                },
+            });
+        } catch (error: any) {
+            console.error('Failed to create violation:', error);
+            Alert.alert('Помилка', error.message || 'Не вдалося створити звіт');
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleLocateMe = async () => {
+        try {
+            const loc = await getCurrentLocation();
+            if (mapRef.current) {
+                mapRef.current.animateToRegion({
+                    latitude: loc.latitude,
+                    longitude: loc.longitude,
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                });
+            }
+            setSelectedLocation(loc);
+            await reverseGeocode(loc.latitude, loc.longitude);
+        } catch (error) {
+            Alert.alert('Помилка', 'Не вдалося визначити ваше місцезнаходження');
+        }
     };
 
     if (loading) {
         return (
             <ThemedView style={styles.full}>
-                <ActivityIndicator size="large" />
+                <ActivityIndicator size="large" color={theme.tint} />
                 <ThemedText style={styles.loadingText}>Завантаження мапи...</ThemedText>
             </ThemedView>
         );
@@ -115,7 +166,7 @@ export default function MapSelectionScreen() {
             <ThemedView style={styles.full}>
                 <ThemedText style={styles.errorTitle}>Не вдалось визначити початкову локацію</ThemedText>
                 <TouchableOpacity style={styles.backLink} onPress={() => router.back()}>
-                    <ThemedText>Назад</ThemedText>
+                    <ThemedText type="link">Назад</ThemedText>
                 </TouchableOpacity>
             </ThemedView>
         );
@@ -124,36 +175,26 @@ export default function MapSelectionScreen() {
     const center = selectedLocation || location;
 
     return (
-        <ThemedView style={styles.container}>
-            {/* Header */}
-            <View style={styles.topBar}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <ThemedText style={styles.backButtonText}>←</ThemedText>
-                </TouchableOpacity>
-                <ThemedText type="title" style={styles.screenTitle}>
-                    Виберіть локацію авто
-                </ThemedText>
-                <View style={styles.backButtonPlaceholder} />
-            </View>
-
-            {/* Map */}
-            <View style={styles.mapWrapper}>
+        <View style={styles.container}>
+            {/* Map takes full screen */}
+            <View style={styles.mapContainer}>
                 {MapView && Marker ? (
                     <MapView
+                        ref={mapRef}
                         style={styles.map}
                         provider={'google'}
                         mapType={'standard'}
                         initialRegion={{
                             latitude: location.latitude,
                             longitude: location.longitude,
-                            latitudeDelta: 0.01,
-                            longitudeDelta: 0.01,
+                            latitudeDelta: 0.005,
+                            longitudeDelta: 0.005,
                         }}
                         onPress={onMapPress}
                         onRegionChangeComplete={onRegionComplete}
                         showsUserLocation
-                        showsMyLocationButton
-                        showsCompass
+                        showsMyLocationButton={false} // Custom button used
+                        showsCompass={false}
                         zoomEnabled
                         scrollEnabled
                     >
@@ -165,7 +206,6 @@ export default function MapSelectionScreen() {
                                 tileSize={512}
                             />
                         )}
-
                         {center && <Marker coordinate={center} />}
                     </MapView>
                 ) : (
@@ -180,52 +220,192 @@ export default function MapSelectionScreen() {
                 )}
             </View>
 
-            {/* Address card */}
-            <View style={styles.addressCard}>
-                <View style={styles.addressRow}>
-                    <ThemedText style={styles.fieldLabel}>Місто</ThemedText>
-                    <ThemedText style={styles.fieldValue}>{city || '—'}</ThemedText>
-                </View>
-                <View style={[styles.addressRow, { marginTop: 8 }]}>
-                    <ThemedText style={styles.fieldLabel}>Адреса</ThemedText>
-                    <ThemedText style={styles.fieldValue} numberOfLines={2}>
-                        {address || '—'}
+            {/* Floating Header */}
+            <View style={[styles.header, { top: insets.top + 10 }]}>
+                <TouchableOpacity
+                    style={[styles.iconButton, { backgroundColor: theme.background }]}
+                    onPress={() => router.back()}
+                >
+                    <Ionicons name="arrow-back" size={24} color={theme.text} />
+                </TouchableOpacity>
+                <View style={[styles.titleContainer, { backgroundColor: theme.background }]}>
+                    <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                        Локація авто
                     </ThemedText>
                 </View>
+                <View style={{ width: 44 }} />
             </View>
 
-            {/* Confirm button */}
-            <View style={styles.footer}>
+            {/* Locate Me Button */}
+            <TouchableOpacity
+                style={[styles.locateButton, { bottom: 240, right: 16, backgroundColor: theme.background }]}
+                onPress={handleLocateMe}
+                activeOpacity={0.8}
+            >
+                <Ionicons name="locate" size={24} color={theme.tint} />
+            </TouchableOpacity>
+
+            {/* Bottom Card */}
+            <View style={[styles.bottomCard, { backgroundColor: theme.background, paddingBottom: insets.bottom + 16 }]}>
+                <View style={styles.dragIndicator} />
+
+                <View style={styles.addressContainer}>
+                    <View style={styles.addressIconContainer}>
+                        <Ionicons name="location" size={24} color={theme.tint} />
+                    </View>
+                    <View style={styles.addressTextContainer}>
+                        <ThemedText style={styles.cityText}>{city || 'Визначення міста...'}</ThemedText>
+                        <ThemedText style={styles.addressText} numberOfLines={2}>
+                            {address || 'Визначення адреси...'}
+                        </ThemedText>
+                    </View>
+                </View>
+
                 <TouchableOpacity
-                    style={[styles.confirmButton, !selectedLocation && styles.confirmButtonDisabled]}
+                    style={[styles.confirmButton, { backgroundColor: theme.tint }, creating && { opacity: 0.6 }]}
                     onPress={handleConfirm}
                     activeOpacity={0.85}
+                    disabled={creating}
                 >
-                    <ThemedText style={styles.confirmButtonText}>Підтвердити вибір</ThemedText>
+                    {creating ? (
+                        <ActivityIndicator color="#FFF" />
+                    ) : (
+                        <>
+                            <ThemedText style={styles.confirmButtonText}>Підтвердити локацію</ThemedText>
+                            <Ionicons name="arrow-forward" size={20} color="#FFF" style={{ marginLeft: 8 }} />
+                        </>
+                    )}
                 </TouchableOpacity>
             </View>
-        </ThemedView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: '#000' },
     full: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    container: { flex: 1, backgroundColor: '#E9F0F6' },
-    topBar: { height: 88, paddingTop: 44, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    backButton: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' },
-    backButtonText: { fontSize: 22, color: '#111' },
-    backButtonPlaceholder: { width: 36, height: 36 },
-    screenTitle: { fontSize: 16, fontWeight: '700', textAlign: 'center', flex: 1, color: '#111' },
-    mapWrapper: { marginHorizontal: 16, borderRadius: 16, overflow: 'hidden', height: 420, backgroundColor: '#fff' },
+    mapContainer: { ...StyleSheet.absoluteFillObject },
     map: { flex: 1 },
-    addressCard: { position: 'absolute', left: 24, right: 24, bottom: 100, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16 },
-    addressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    fieldLabel: { fontSize: 13, color: '#6B6B6B', maxWidth: '40%' },
-    fieldValue: { fontSize: 15, fontWeight: '600', color: '#111', textAlign: 'right', maxWidth: '58%' },
-    footer: { paddingHorizontal: 24, paddingBottom: 28, paddingTop: 16 },
-    confirmButton: { height: 56, borderRadius: 28, backgroundColor: '#050505', alignItems: 'center', justifyContent: 'center' },
-    confirmButtonDisabled: { opacity: 0.6 },
-    confirmButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+
+    header: {
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    iconButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    titleContainer: {
+        paddingHorizontal: 16,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    headerTitle: { fontSize: 16 },
+
+    locateButton: {
+        position: 'absolute',
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 5,
+        zIndex: 10,
+    },
+
+    bottomCard: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: 24,
+        paddingTop: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    dragIndicator: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#E5E5EA',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 20,
+    },
+    addressContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    addressIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'rgba(0, 122, 255, 0.1)', // Light blue tint
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    addressTextContainer: {
+        flex: 1,
+    },
+    cityText: {
+        fontSize: 13,
+        color: '#8E8E93',
+        marginBottom: 4,
+        fontWeight: '600',
+    },
+    addressText: {
+        fontSize: 17,
+        fontWeight: '700',
+    },
+
+    confirmButton: {
+        height: 56,
+        borderRadius: 28,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    confirmButtonText: {
+        color: '#FFF',
+        fontSize: 17,
+        fontWeight: '700',
+    },
+
     loadingText: { marginTop: 12 },
     errorTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
     backLink: { marginTop: 8 },

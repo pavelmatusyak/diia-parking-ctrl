@@ -1,28 +1,110 @@
 import { clearAuthToken, getAuthToken, setAuthToken } from './auth';
 
-type SubmitInitialReportPayload = { photoUri: string; latitude: number; longitude: number; };
-export type InitialReportResponse = { violation_id: string;[key: string]: any; };
-type SubmitViolationDetailsPayload = { violationId: string; reason: string; hasSupportingSigns?: boolean; note?: string; latitude?: number; longitude?: number; };
-type CreateViolationPayload = { latitude: number; longitude: number; };
-type CreateViolationResponse = { violation_id?: string; id?: string;[key: string]: any; };
-type UploadPhotoResponse = { photo_id?: string;[key: string]: any; };
-type SubmitViolationPayload = { reason: string; has_supporting_signs?: boolean; note?: string; latitude?: number; longitude?: number; };
-type AnonymousAuthResponse = { access_token?: string; token_type?: string;[key: string]: any; };
-
 let BASE_URL: string = process.env.EXPO_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? '';
 if (BASE_URL.includes('/api/docs')) BASE_URL = BASE_URL.replace(/\/api\/docs\/?$/, '');
 const API_BASE = BASE_URL ? `${BASE_URL}/api/v1` : '';
+
+// Endpoints
 const AUTH_ENDPOINT = `${API_BASE}/auth/anonymous`;
 const VIOLATIONS_ENDPOINT = `${API_BASE}/violations`;
-const OCR_ENDPOINT = `${API_BASE}/ocr/analyze`;
-const GEOCODING_ENDPOINT = `${API_BASE}/geocoding/reverse`;
 const PARKING_ANALYSIS_ENDPOINT = `${API_BASE}/parking-analysis/analyze`;
+
 const DEFAULT_HEADERS = { Accept: 'application/json' };
 
-console.log('[API Config] BASE_URL:', BASE_URL);
-console.log('[API Config] API_BASE:', API_BASE);
-console.log('[API Config] AUTH_ENDPOINT:', AUTH_ENDPOINT);
+// Types
+export type AuthResponse = {
+    access_token: string;
+    token_type: string;
+    user_id: string;
+    diia_user_id: string;
+    name: string;
+    is_anonymous: boolean;
+};
 
+export type ViolationResponse = {
+    id: string;
+    user_id: string;
+    status: string;
+    license_plate?: string;
+    license_plate_confidence?: number;
+    latitude: number;
+    longitude: number;
+    address?: string;
+    created_at: string;
+    notes?: string;
+    has_road_sign_photo: boolean;
+};
+
+export type OCRResults = {
+    bbox: { x1: number; x2: number; y1: number; y2: number };
+    code: number;
+    confidence: number;
+    message: string;
+    plate: string;
+    status: string;
+};
+
+export type PhotoResponse = {
+    id: string;
+    violation_id: string;
+    photo_type: 'initial' | 'context';
+    storage_url: string;
+    file_size: number;
+    mime_type: string;
+    uploaded_at: string;
+    ocr_results?: OCRResults;
+};
+
+export type AnalysisResponse = {
+    isViolation: boolean;
+    overallViolationConfidence: number;
+    likelyArticles: string[];
+    probabilityBreakdown: Record<string, number>;
+    reasons: { source: string; detail: string }[];
+    crossChecks: any;
+    finalHumanReadableConclusion: string;
+};
+
+export type SubmitViolationPayload = {
+    violations: {
+        violation_reason: string;
+        violation_code: string;
+        violation_type: string;
+    }[];
+    notes?: string;
+};
+
+export type SubmitResponse = {
+    id: string;
+    status: string;
+    submitted_at: string;
+    pdf_url?: string;
+    detail?: string; // For 400 errors
+};
+
+export type TimerStartResponse = {
+    timer_started_at: string;
+    timer_expires_at: string;
+};
+
+export type TimerStatusResponse = {
+    timer_required: boolean;
+    timer_started_at?: string;
+    timer_expires_at?: string;
+    seconds_remaining: number;
+    can_submit: boolean;
+};
+
+export type EvidenceResponse = {
+    violation_id: string;
+    license_plate: string;
+    location: { latitude: number; longitude: number; address?: string };
+    photos: { id: string; type: string; url: string; captured_at?: string }[];
+    violations: { violation_reason: string; violation_code: string; violation_type: string }[];
+    created_at: string;
+};
+
+// Helper functions
 async function getAuthHeaders(): Promise<Record<string, string>> {
     const token = await getAuthToken();
     const headers: Record<string, string> = { ...DEFAULT_HEADERS };
@@ -30,136 +112,145 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     return headers;
 }
 
-async function ensureAuthenticated(): Promise<void> {
-    const existingToken = await getAuthToken();
-    if (existingToken) {
-        console.log('[API] Using existing token');
-        return;
-    }
-
-    console.log('[API] Authenticating with endpoint:', AUTH_ENDPOINT);
+async function fetchJson(url: string, options: RequestInit) {
+    console.log(`[API] ${options.method || 'GET'} ${url}`);
     try {
-        const response = await fetch(AUTH_ENDPOINT, { method: 'POST', headers: DEFAULT_HEADERS });
-        console.log('[API] Auth response status:', response.status);
+        const response = await fetch(url, options);
 
-        if (!response.ok) {
-            const errorText = await response.text().catch(() => `HTTP ${response.status}`);
-            console.error('[API] Auth failed:', errorText);
-            throw new Error(`Помилка автентифікації: ${errorText}`);
+        if (response.status === 401) {
+            await clearAuthToken();
+            throw new Error('Unauthorized');
         }
 
-        const data: AnonymousAuthResponse = await response.json();
-        console.log('[API] Auth response data:', data);
+        const data = await response.json();
 
-        const token: string = data.access_token ?? data.token ?? (data as any).accessToken ?? (data as any).data?.access_token;
-        if (!token) throw new Error('Токен не отримано від сервера');
+        if (!response.ok) {
+            // Pass the error data structure for handling (e.g. timer requirement)
+            throw { status: response.status, data };
+        }
 
-        await setAuthToken(token);
-        console.log('[API] Token saved successfully');
-    } catch (error) {
-        console.error('[API] Authentication error:', error);
+        return data;
+    } catch (error: any) {
+        console.error('[API] Request failed:', error);
         throw error;
     }
 }
 
-const throwIfNotOk = async (response: Response) => {
-    if (!response.ok) {
-        if (response.status === 401) await clearAuthToken();
-        throw new Error(await response.text().catch(() => `HTTP ${response.status}`));
-    }
-};
+// API Methods
 
-async function fetchJson(url: string, options: RequestInit) {
-    console.log('[API] Fetching:', url);
-    let response: Response;
-    try {
-        response = await fetch(url, options);
-    } catch (error) {
-        console.error('[API] Fetch error:', error);
-        throw new Error('Немає підключення до сервера');
-    }
-    await throwIfNotOk(response);
-    try {
-        return await response.json();
-    } catch {
-        return {};
-    }
+export async function authenticateAnonymous(): Promise<AuthResponse> {
+    const response = await fetch(AUTH_ENDPOINT, {
+        method: 'POST',
+        headers: DEFAULT_HEADERS,
+        body: ''
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error('Auth failed');
+    await setAuthToken(data.access_token);
+    return data;
 }
 
-async function createViolation(payload: CreateViolationPayload): Promise<CreateViolationResponse> {
-    await ensureAuthenticated();
-    const headers = { ...await getAuthHeaders(), 'Content-Type': 'application/json' };
-    const data = await fetchJson(VIOLATIONS_ENDPOINT, { method: 'POST', headers, body: JSON.stringify(payload) });
-    const violationId: string = data?.violation_id ?? data?.id ?? data?.data?.violation_id ?? data?.data?.id;
-    if (!violationId) throw new Error('Сервер не повернув ідентифікатор порушення');
-    return { ...data, violation_id: violationId, id: violationId };
-}
-
-async function uploadViolationPhoto(violationId: string, photoUri: string, isSignPhoto = false): Promise<UploadPhotoResponse> {
-    await ensureAuthenticated();
+export async function createViolation(latitude: number, longitude: number, notes?: string): Promise<ViolationResponse> {
     const headers = await getAuthHeaders();
-    const endpoint = isSignPhoto ? `${VIOLATIONS_ENDPOINT}/${violationId}/sign-photo` : `${VIOLATIONS_ENDPOINT}/${violationId}/photos`;
-    if (!photoUri?.trim()) throw new Error('URI фото не вказано');
+    return fetchJson(VIOLATIONS_ENDPOINT, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude, longitude, notes })
+    });
+}
+
+export async function getUserViolations(): Promise<ViolationResponse[]> {
+    const headers = await getAuthHeaders();
+    return fetchJson(`${API_BASE}/users/me/violations`, {
+        method: 'GET',
+        headers
+    });
+}
+
+export async function uploadViolationPhoto(
+    violationId: string,
+    photoUri: string,
+    type: 'initial' | 'context' = 'initial'
+): Promise<PhotoResponse> {
+    const headers = await getAuthHeaders();
+    // Remove Content-Type to let browser/native set it with boundary
+    delete headers['Content-Type'];
+
     const formData = new FormData();
-    formData.append('photo', { uri: photoUri, type: 'image/jpeg', name: 'violation.jpg' } as any);
-    return fetchJson(endpoint, { method: 'POST', headers, body: formData });
+
+    // Handle web vs native differently
+    if (typeof window !== 'undefined' && photoUri.startsWith('data:')) {
+        // Web: Convert data URL to Blob
+        const response = await fetch(photoUri);
+        const blob = await response.blob();
+        formData.append('file', blob, 'photo.jpg');
+    } else if (typeof window !== 'undefined' && photoUri.startsWith('blob:')) {
+        // Web: Blob URL
+        const response = await fetch(photoUri);
+        const blob = await response.blob();
+        formData.append('file', blob, 'photo.jpg');
+    } else {
+        // Native: Use React Native format
+        formData.append('file', { uri: photoUri, type: 'image/jpeg', name: 'photo.jpg' } as any);
+    }
+
+    const endpoint = type === 'initial'
+        ? `${VIOLATIONS_ENDPOINT}/${violationId}/photos?photo_type=initial`
+        : `${VIOLATIONS_ENDPOINT}/${violationId}/sign-photo`;
+
+    return fetchJson(endpoint, {
+        method: 'POST',
+        headers,
+        body: formData
+    });
 }
 
-async function submitViolation(violationId: string, payload: SubmitViolationPayload) {
-    await ensureAuthenticated();
-    const headers = { ...await getAuthHeaders(), 'Content-Type': 'application/json' };
-    return fetchJson(`${VIOLATIONS_ENDPOINT}/${violationId}/submit`, { method: 'PUT', headers, body: JSON.stringify(payload) });
-}
-
-async function submitToPolice(violationId: string) {
-    await ensureAuthenticated();
+export async function analyzeParking(violationId: string): Promise<AnalysisResponse> {
     const headers = await getAuthHeaders();
-    return fetchJson(`${VIOLATIONS_ENDPOINT}/${violationId}/submit-to-police`, { method: 'POST', headers });
+    return fetchJson(PARKING_ANALYSIS_ENDPOINT, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ violation_id: violationId })
+    });
 }
 
-export async function submitInitialReport({ photoUri, latitude, longitude }: SubmitInitialReportPayload): Promise<InitialReportResponse> {
-    if (!BASE_URL?.trim()) throw new Error('Бекенд не налаштовано');
-    if (!photoUri?.trim()) throw new Error('Фото не вказано');
-    if (typeof latitude !== 'number' || typeof longitude !== 'number') throw new Error('Некоректні координати');
-    const violation = await createViolation({ latitude, longitude });
-    const violationId: string = violation.violation_id!;
-    await uploadViolationPhoto(violationId, photoUri);
-    return { violation_id: violationId, reportId: violationId };
-}
-
-export async function submitViolationDetails(payload: SubmitViolationDetailsPayload) {
-    if (!BASE_URL?.trim()) throw new Error('Бекенд не налаштовано');
-    const { violationId, reason, hasSupportingSigns, note, latitude, longitude } = payload;
-    if (!violationId?.trim()) throw new Error('Відсутній ідентифікатор порушення');
-    if (!reason?.trim()) throw new Error('Не вказано причину правопорушення');
-    await submitViolation(violationId, { reason, has_supporting_signs: hasSupportingSigns, note, latitude, longitude });
-    await submitToPolice(violationId);
-}
-
-export async function analyzeLicensePlate(photoUri: string) {
-    await ensureAuthenticated();
+export async function submitViolation(violationId: string, payload: SubmitViolationPayload): Promise<SubmitResponse> {
     const headers = await getAuthHeaders();
-    const formData = new FormData();
-    formData.append('photo', { uri: photoUri, type: 'image/jpeg', name: 'plate.jpg' } as any);
-    return fetchJson(OCR_ENDPOINT, { method: 'POST', headers, body: formData });
+    return fetchJson(`${VIOLATIONS_ENDPOINT}/${violationId}/submit`, {
+        method: 'PUT',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
 }
 
-export async function reverseGeocode(latitude: number, longitude: number) {
-    await ensureAuthenticated();
-    const headers = { ...await getAuthHeaders(), 'Content-Type': 'application/json' };
-    return fetchJson(GEOCODING_ENDPOINT, { method: 'POST', headers, body: JSON.stringify({ latitude, longitude }) });
-}
-
-export async function uploadSignPhoto(violationId: string, photoUri: string) {
-    return uploadViolationPhoto(violationId, photoUri, true);
-}
-
-export async function analyzeParking(photoUri: string, latitude?: number, longitude?: number) {
-    await ensureAuthenticated();
+export async function startTimer(violationId: string): Promise<TimerStartResponse> {
     const headers = await getAuthHeaders();
-    const formData = new FormData();
-    formData.append('photo', { uri: photoUri, type: 'image/jpeg', name: 'parking.jpg' } as any);
-    if (latitude !== undefined) formData.append('latitude', String(latitude));
-    if (longitude !== undefined) formData.append('longitude', String(longitude));
-    return fetchJson(PARKING_ANALYSIS_ENDPOINT, { method: 'POST', headers, body: formData });
+    return fetchJson(`${VIOLATIONS_ENDPOINT}/${violationId}/start-timer`, {
+        method: 'POST',
+        headers,
+        body: ''
+    });
 }
+
+export async function getTimerStatus(violationId: string): Promise<TimerStatusResponse> {
+    const headers = await getAuthHeaders();
+    return fetchJson(`${VIOLATIONS_ENDPOINT}/${violationId}/timer-status`, {
+        method: 'GET',
+        headers
+    });
+}
+
+export async function getEvidence(violationId: string): Promise<EvidenceResponse> {
+    const headers = await getAuthHeaders();
+    return fetchJson(`${VIOLATIONS_ENDPOINT}/${violationId}/evidence`, {
+        method: 'GET',
+        headers
+    });
+}
+
+// Legacy/Compatibility wrappers if needed (can be removed if we update all calls)
+export async function ensureAuthenticated() {
+    const token = await getAuthToken();
+    if (!token) await authenticateAnonymous();
+}
+

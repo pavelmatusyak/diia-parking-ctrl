@@ -7,12 +7,14 @@ type ViolationContextValue = {
   selectedSigns: string[];
   violationReason: string | null;
   confirmPhoto: string | null;
+  reportId: string | null;
   setPlatePhoto: (uri: string | null) => void;
   setWidePhoto: (uri: string | null) => void;
   setSelectedSigns: (signIds: string[]) => void;
   addSignPhoto: (uri: string) => void;
   setViolationReason: (reason: string | null) => void;
   setConfirmPhoto: (uri: string | null) => void;
+  setReportId: (id: string | null) => void;
   resetAll: () => void;
 };
 
@@ -27,6 +29,7 @@ export const ViolationContextProvider = ({ children }: { children: React.ReactNo
   const [selectedSigns, setSelectedSigns] = useState<string[]>([]);
   const [violationReason, setViolationReason] = useState<string | null>(null);
   const [confirmPhoto, setConfirmPhoto] = useState<string | null>(null);
+  const [reportId, setReportId] = useState<string | null>(null);
 
   const resetAll = () => {
     setPlatePhoto(null);
@@ -35,6 +38,7 @@ export const ViolationContextProvider = ({ children }: { children: React.ReactNo
     setSelectedSigns([]);
     setViolationReason(null);
     setConfirmPhoto(null);
+    setReportId(null);
   };
 
   const addSignPhoto = (uri: string) => {
@@ -49,15 +53,17 @@ export const ViolationContextProvider = ({ children }: { children: React.ReactNo
       selectedSigns,
       violationReason,
       confirmPhoto,
+      reportId,
       setPlatePhoto,
       setWidePhoto,
       setSelectedSigns,
       addSignPhoto,
       setViolationReason,
       setConfirmPhoto,
+      setReportId,
       resetAll,
     }),
-    [platePhoto, widePhoto, signsPhotos, selectedSigns, violationReason, confirmPhoto]
+    [platePhoto, widePhoto, signsPhotos, selectedSigns, violationReason, confirmPhoto, reportId]
   );
 
   return <ViolationContext.Provider value={value}>{children}</ViolationContext.Provider>;

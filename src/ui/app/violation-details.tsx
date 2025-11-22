@@ -1,211 +1,270 @@
+import { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
-import { MAPTILER_TILE_URL } from '@/constants/maptiler';
 import { ThemedView } from '@/constants/themed-view';
-import { useReactNativeMaps } from '@/hooks/use-react-native-maps';
-import { submitViolationDetails } from '@/services/api';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useViolationContext } from '@/context/violation-context';
+import { analyzeParking, submitViolation } from '@/services/api';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const REASONS = [
-    { id: 'no_stopping_zone', title: 'Стоянка або зупинка під знаком', description: 'Наприклад, біля знаків 3.34‑3.38 або під знаком «Зупинка заборонена».' },
-    { id: 'crosswalk_blocked', title: 'Перекрито пішохідний перехід / тротуар', description: 'Авто заважає пішоходам або обмежує огляд на переході.' },
-    { id: 'disabled_spot', title: 'Стоянка на місці для людей з інвалідністю', description: 'Місце позначене відповідною розміткою або знаком.' },
-];
+// Violation type mappings
+const VIOLATION_TYPES: Record<string, { title: string; description: string }> = {
+    railway_crossing: { title: 'Залізничний переїзд', description: 'Паркування на залізничному переїзді' },
+    tram_track: { title: 'Трамвайна колія', description: 'Паркування на трамвайних коліях' },
+    bridge_or_tunnel: { title: 'Міст або тунель', description: 'Паркування на мосту чи в тунелі' },
+    pedestrian_crossing_10m: { title: 'Пішохідний перехід (10м)', description: 'Паркування ближче 10м до переходу' },
+    intersection_10m: { title: 'Перехрестя (10м)', description: 'Паркування ближче 10м до перехрестя' },
+    narrowing_less_than_3m: { title: 'Звуження < 3м', description: 'Залишає менше 3м для проїзду' },
+    bus_stop_30m: { title: 'Зупинка (30м)', description: 'Паркування ближче 30м до зупинки' },
+    driveway_exit_10m: { title: 'Виїзд з двору (10м)', description: 'Паркування ближче 10м до виїзду' },
+    sidewalk: { title: 'Тротуар', description: 'Паркування на тротуарі' },
+    pedestrian_zone: { title: 'Пішохідна зона', description: 'Паркування в пішохідній зоні' },
+    cycleway: { title: 'Велодоріжка', description: 'Паркування на велодоріжці' },
+    blocking_traffic_signal: { title: 'Блокування світлофора', description: 'Перешкода видимості світлофора' },
+    blocking_roadway: { title: 'Блокування проїзду', description: 'Перешкода руху транспорту' },
+};
 
 export default function ViolationDetailsScreen() {
-    const params = useLocalSearchParams();
-    const reportId = params.reportId as string | undefined;
-    const latitude = params.latitude ? Number(params.latitude) : undefined;
-    const longitude = params.longitude ? Number(params.longitude) : undefined;
-    const hasLocation = Number.isFinite(latitude) && Number.isFinite(longitude);
+    const insets = useSafeAreaInsets();
+    const { reportId } = useViolationContext();
+    const [analyzing, setAnalyzing] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [analysis, setAnalysis] = useState<any>(null);
+    const [selectedViolations, setSelectedViolations] = useState<Set<string>>(new Set());
+    const [notes, setNotes] = useState('');
 
-    const [selectedReason, setSelectedReason] = useState<string | null>(REASONS[0]?.id ?? null);
-    const [hasSigns, setHasSigns] = useState<'yes' | 'no' | null>(null);
-    const [note, setNote] = useState('');
-    const [sending, setSending] = useState(false);
-    const mapComponents = useReactNativeMaps();
-    const MapViewComponent = mapComponents?.MapView;
-    const MarkerComponent = mapComponents?.Marker;
-    const UrlTileComponent = mapComponents?.UrlTile;
-    const canRenderTileOverlay = Boolean(UrlTileComponent);
+    useEffect(() => {
+        performAnalysis();
+    }, []);
 
-    const activeReason = useMemo(() => REASONS.find(r => r.id === selectedReason), [selectedReason]);
+    const performAnalysis = async () => {
+        if (!reportId) {
+            setAnalyzing(false);
+            Alert.alert('Помилка', 'Відсутній ідентифікатор порушення', [
+                { text: 'OK', onPress: () => router.back() }
+            ]);
+            return;
+        }
+
+        setAnalyzing(true);
+        try {
+            // Make 3 parallel requests and use the first successful one
+            const results = await Promise.race([
+                analyzeParking(reportId),
+                analyzeParking(reportId),
+                analyzeParking(reportId)
+            ]);
+
+            setAnalysis(results);
+
+            // Pre-select violations with probability > 0.5
+            const preselected = new Set<string>();
+            Object.entries(results.probabilityBreakdown).forEach(([key, prob]) => {
+                if ((prob as number) > 0.5) {
+                    preselected.add(key);
+                }
+            });
+            setSelectedViolations(preselected);
+
+            // Show AI conclusion as alert
+            if (results.finalHumanReadableConclusion) {
+                Alert.alert('Аналіз паркування', results.finalHumanReadableConclusion);
+            }
+        } catch (error: any) {
+            console.error('Analysis failed:', error);
+            Alert.alert('Помилка', 'Не вдалося проаналізувати паркування. Спробуйте ще раз.');
+            router.back();
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
+    const toggleViolation = (key: string) => {
+        const newSet = new Set(selectedViolations);
+        if (newSet.has(key)) {
+            newSet.delete(key);
+        } else {
+            newSet.add(key);
+        }
+        setSelectedViolations(newSet);
+    };
 
     const handleSubmit = async () => {
+        if (selectedViolations.size === 0) {
+            Alert.alert('Увага', 'Оберіть хоча б одне порушення');
+            return;
+        }
+
         if (!reportId) {
-            alert('Відсутній ідентифікатор звіту. Спробуйте зробити фото ще раз.');
-            router.replace('/(tabs)');
-            return;
-        }
-        if (!selectedReason) {
-            alert('Будь ласка, оберіть причину правопорушення');
-            return;
-        }
-        if (hasSigns === null) {
-            alert('Підтвердіть наявність знаків або розмітки');
+            Alert.alert('Помилка', 'Відсутній ідентифікатор порушення');
             return;
         }
 
-        setSending(true);
+        setSubmitting(true);
         try {
-            console.log('[UI] Початок відправки штрафу до поліції...');
-            
-            const violationId = params.violationId as string | undefined || reportId;
-            if (!violationId) {
-                throw new Error('Відсутній ідентифікатор порушення');
+            const violations = Array.from(selectedViolations).map(key => ({
+                violation_reason: key,
+                violation_code: key,
+                violation_type: key,
+            }));
+
+            const payload = {
+                violations,
+                notes: notes || undefined,
+            };
+
+            console.log('Submitting violations:', violations);
+            console.log('Full payload:', JSON.stringify(payload, null, 2));
+            console.log('Notes:', notes);
+
+            const result = await submitViolation(reportId, payload);
+
+            console.log('Submission successful:', result);
+
+            // Navigate to success/evidence screen
+            router.push('/violation-success');
+        } catch (error: any) {
+            console.error('Submission failed:', error);
+            console.error('Error details:', error.data);
+
+            // Check if timer is required
+            if (error.status === 400 && error.data?.detail) {
+                const detail = error.data.detail;
+
+                if (detail.includes('timer') || detail.includes('5-minute') || detail.includes('sign photo')) {
+                    // Timer is required - start it automatically
+                    console.log('Timer required, starting timer...');
+                    try {
+                        const { startTimer } = await import('@/services/api');
+                        await startTimer(reportId);
+                        console.log('Timer started successfully');
+                        router.push('/waiting-confirmation');
+                    } catch (err) {
+                        console.error('Failed to start timer:', err);
+                        alert('Помилка: Не вдалося запустити таймер');
+                    }
+                } else {
+                    // Other 400 error
+                    console.error('Other 400 error:', detail);
+                    alert(`Помилка: ${detail || 'Не вдалося відправити звіт'}`);
+                }
+            } else {
+                console.error('Non-400 error:', error.message);
+                alert(`Помилка: ${error.message || 'Не вдалося відправити звіт'}`);
             }
-            
-            console.log('[UI] Викликаємо submitViolationDetails з параметрами:', {
-                violationId,
-                reason: selectedReason,
-                hasSupportingSigns: hasSigns === 'yes',
-                note: note.trim() || undefined,
-                latitude,
-                longitude,
-            });
-            
-            await submitViolationDetails({
-                violationId,
-                reason: selectedReason,
-                hasSupportingSigns: hasSigns === 'yes',
-                note: note.trim() || undefined,
-                latitude,
-                longitude,
-            });
-            
-            console.log('[UI] ✅ submitViolationDetails завершено успішно. Переходимо до екрану успіху.');
-            router.replace('/violation-success');
-        } catch (error) {
-            console.error('[UI] ❌ Помилка при відправці штрафу:', error);
-            let message = 'Не вдалося відправити штраф. Спробуйте ще раз.';
-            
-            if (error instanceof Error) {
-                message = error.message;
-                // Якщо помилка про відсутність підключення
-                if (error.message.includes('підключення') || error.message.includes('інтернет')) {
-                    message = 'Немає підключення до інтернету. Штраф не відправлено. Перевірте з\'єднання та спробуйте ще раз.';
-                }
-                // Якщо помилка про відсутність відповіді від сервера
-                if (error.message.includes('не отримано відповіді') || error.message.includes('немає відповіді')) {
-                    message = 'Сервер не відповідає. Штраф не відправлено. Перевірте підключення до інтернету та спробуйте ще раз.';
-                }
-                // Якщо штраф не відправлено до поліції
-                if (error.message.includes('не відправлено до поліції')) {
-                    message = 'Штраф не відправлено до поліції. Спробуйте ще раз.';
-                }
-            }
-            
-            console.log('[UI] Показуємо Alert з помилкою:', message);
-            Alert.alert('Помилка відправки', message);
-            // НЕ переходимо далі - залишаємось на цій сторінці
-            console.log('[UI] Залишаємось на поточній сторінці - перехід не виконано');
         } finally {
-            setSending(false);
-            console.log('[UI] setSending(false) - кнопка знову активна');
+            setSubmitting(false);
         }
     };
 
-    const renderCustomTile = () => {
-        if (!canRenderTileOverlay || !UrlTileComponent || !MAPTILER_TILE_URL) {
-            return null;
-        }
-        const Tile = UrlTileComponent;
-        return <Tile urlTemplate={MAPTILER_TILE_URL} zIndex={0} maximumZ={20} tileSize={512} />;
-    };
+    if (analyzing) {
+        return (
+            <ThemedView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#007AFF" />
+                    <ThemedText style={styles.loadingText}>
+                        Аналіз паркування...
+                    </ThemedText>
+                    <ThemedText style={styles.loadingSubtext}>
+                        Це може зайняти кілька секунд
+                    </ThemedText>
+                </View>
+            </ThemedView>
+        );
+    }
 
     return (
         <ThemedView style={styles.container}>
-            <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
-
-                <ThemedText type="title" style={styles.title}>
-                    Виглядає так, що авто дійсно припарковане не за правилами
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color="#000" />
+                </TouchableOpacity>
+                <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
+                    Деталі порушення
                 </ThemedText>
-                <ThemedText style={styles.subtitle}>
-                    Оберіть причину правопорушення та підтвердіть чи є знаки/розмітка
+                <View style={{ width: 44 }} />
+            </View>
+
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+                <ThemedText style={styles.sectionTitle}>Оберіть типи порушень</ThemedText>
+                <ThemedText style={styles.sectionSubtitle}>
+                    Типи з ймовірністю {'>'} 50% вже обрані
                 </ThemedText>
 
-                {MapViewComponent && MarkerComponent && hasLocation && (
-                    <View style={styles.mapContainer}>
-                        <MapViewComponent
-                            style={styles.map}
-                            mapType={canRenderTileOverlay ? 'none' : 'standard'}
-                            initialRegion={{
-                                latitude: latitude!,
-                                longitude: longitude!,
-                                latitudeDelta: 0.004,
-                                longitudeDelta: 0.004,
-                            }}
-                            scrollEnabled={false}
-                            zoomEnabled={false}
-                            pitchEnabled={false}
-                            rotateEnabled={false}
-                        >
-                            {renderCustomTile()}
-                            <MarkerComponent coordinate={{ latitude: latitude!, longitude: longitude! }} />
-                        </MapViewComponent>
-                    </View>
-                )}
+                {/* Violation Types */}
+                {Object.entries(VIOLATION_TYPES).map(([key, info]) => {
+                    const probability = analysis?.probabilityBreakdown?.[key] || 0;
+                    const isSelected = selectedViolations.has(key);
 
-                <ThemedText style={styles.blockTitle}>Оберіть причину правопорушення</ThemedText>
-                {REASONS.map(r => {
-                    const isActive = r.id === selectedReason;
                     return (
                         <TouchableOpacity
-                            key={r.id}
-                            style={[styles.card, isActive && styles.cardActive]}
-                            onPress={() => setSelectedReason(r.id)}
+                            key={key}
+                            style={[
+                                styles.violationCard,
+                                isSelected && styles.violationCardSelected
+                            ]}
+                            onPress={() => toggleViolation(key)}
                         >
-                            <ThemedText style={[styles.cardTitle, isActive && styles.cardTitleActive]}>{r.title}</ThemedText>
-                            <ThemedText style={styles.cardDescription}>{r.description}</ThemedText>
+                            <View style={styles.violationHeader}>
+                                <View style={styles.violationInfo}>
+                                    <ThemedText style={styles.violationTitle}>
+                                        {info.title}
+                                    </ThemedText>
+                                    <ThemedText style={styles.violationDescription}>
+                                        {info.description}
+                                    </ThemedText>
+                                </View>
+                                <View style={styles.violationRight}>
+                                    {probability > 0 && (
+                                        <View style={styles.probabilityBadge}>
+                                            <ThemedText style={styles.probabilityText}>
+                                                {Math.round(probability * 100)}%
+                                            </ThemedText>
+                                        </View>
+                                    )}
+                                    <Ionicons
+                                        name={isSelected ? 'checkbox' : 'square-outline'}
+                                        size={24}
+                                        color={isSelected ? '#007AFF' : '#C7C7CC'}
+                                    />
+                                </View>
+                            </View>
                         </TouchableOpacity>
                     );
                 })}
 
-                <ThemedText style={styles.blockTitle}>
-                    Чи є поруч знаки або розмітка котрі підтверджують правопорушення?
-                </ThemedText>
-                <View style={styles.answerRow}>
-                    {['yes', 'no'].map(a => {
-                        const isActive = hasSigns === a;
-                        return (
-                            <TouchableOpacity
-                                key={a}
-                                style={[styles.answerButton, isActive && styles.answerButtonActive]}
-                                onPress={() => setHasSigns(a as 'yes' | 'no')}
-                            >
-                                <ThemedText style={[styles.answerText, isActive && styles.answerTextActive]}>
-                                    {a === 'yes' ? 'Так' : 'Ні'}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        );
-                    })}
+                {/* Notes */}
+                <View style={styles.notesSection}>
+                    <ThemedText style={styles.sectionTitle}>Додаткові примітки (опціонально)</ThemedText>
+                    <TextInput
+                        style={styles.notesInput}
+                        placeholder="Додайте будь-які деталі про порушення..."
+                        placeholderTextColor="#999"
+                        multiline
+                        numberOfLines={4}
+                        value={notes}
+                        onChangeText={setNotes}
+                        textAlignVertical="top"
+                    />
                 </View>
-
-                {activeReason && (
-                    <>
-                        <ThemedText style={styles.blockTitle}>Додаткові деталі (необовʼязково)</ThemedText>
-                        <TextInput
-                            style={styles.noteInput}
-                            multiline
-                            numberOfLines={4}
-                            placeholder="Наприклад: «Авто перекриває два місця та пішохідний перехід»"
-                            value={note}
-                            onChangeText={setNote}
-                            textAlignVertical="top"
-                        />
-                    </>
-                )}
-
             </ScrollView>
 
-            <View style={styles.bottomBar}>
+            {/* Submit Button */}
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
                 <TouchableOpacity
-                    style={[styles.nextBtn, sending ? styles.nextBtnDisabled : styles.nextBtnActive]}
+                    style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
                     onPress={handleSubmit}
-                    disabled={sending}
+                    disabled={submitting}
                 >
-                    {sending ? <ActivityIndicator color="#fff" /> : <ThemedText style={[styles.nextText, sending && styles.nextTextDisabled]}>Відправити до поліції</ThemedText>}
+                    {submitting ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <ThemedText style={styles.submitButtonText}>
+                            Відправити звіт
+                        </ThemedText>
+                    )}
                 </TouchableOpacity>
             </View>
         </ThemedView>
@@ -213,27 +272,127 @@ export default function ViolationDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#E9F2F8', paddingTop: 60, paddingHorizontal: 20 },
-    title: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
-    subtitle: { fontSize: 14, color: '#1F1F1F', marginBottom: 16 },
-    mapContainer: { height: 160, borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
-    map: { flex: 1 },
-    blockTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
-    card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#DCDCDC', gap: 4 },
-    cardActive: { borderColor: '#000', backgroundColor: '#D9E9F5' },
-    cardTitle: { fontSize: 15, fontWeight: '600', color: '#1F1F1F' },
-    cardTitleActive: { color: '#000' },
-    cardDescription: { fontSize: 14, color: '#6B6B6B' },
-    answerRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-    answerButton: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#DCDCDC', alignItems: 'center' },
-    answerButtonActive: { borderColor: '#000', backgroundColor: '#D9E9F5' },
-    answerText: { fontSize: 15, fontWeight: '600', color: '#1F1F1F' },
-    answerTextActive: { color: '#000' },
-    noteInput: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#DCDCDC', padding: 12, fontSize: 14, lineHeight: 18, marginBottom: 16 },
-    bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: '#E9F2F8' },
-    nextBtn: { paddingVertical: 14, borderRadius: 30, alignItems: 'center' },
-    nextBtnActive: { backgroundColor: '#000' },
-    nextBtnDisabled: { backgroundColor: '#CBD4DB' },
-    nextText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-    nextTextDisabled: { color: '#808080' },
+    container: { flex: 1 },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    loadingSubtext: {
+        marginTop: 8,
+        fontSize: 14,
+        opacity: 0.6,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E5EA',
+    },
+    backButton: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: { fontSize: 18 },
+    scrollView: { flex: 1 },
+    content: {
+        padding: 20,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    sectionSubtitle: {
+        fontSize: 14,
+        opacity: 0.6,
+        marginBottom: 16,
+    },
+    violationCard: {
+        backgroundColor: '#F5F5F5',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    violationCardSelected: {
+        backgroundColor: '#E3F2FD',
+        borderColor: '#007AFF',
+    },
+    violationHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    violationInfo: {
+        flex: 1,
+        marginRight: 12,
+    },
+    violationTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    violationDescription: {
+        fontSize: 14,
+        opacity: 0.7,
+    },
+    violationRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    probabilityBadge: {
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    probabilityText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    notesSection: {
+        marginTop: 24,
+    },
+    notesInput: {
+        backgroundColor: '#F5F5F5',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        minHeight: 100,
+        marginTop: 8,
+    },
+    footer: {
+        padding: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E5EA',
+    },
+    submitButton: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    submitButtonDisabled: {
+        opacity: 0.5,
+    },
+    submitButtonText: {
+        color: '#fff',
+        fontSize: 17,
+        fontWeight: '700',
+    },
 });

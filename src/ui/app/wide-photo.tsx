@@ -3,18 +3,29 @@ import { ThemedText } from '@/components/themed-text';
 import { useViolationContext } from '@/context/violation-context';
 import { router } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
+import { uploadViolationPhoto } from '@/services/api';
 
 export default function WidePhotoScreen() {
-  const { setWidePhoto } = useViolationContext();
+  const { setWidePhoto, reportId } = useViolationContext();
 
   const handleCapture = async (photo: { uri: string }) => {
     setWidePhoto(photo.uri);
-    router.replace('/signs-selection');
+
+    // Upload as context photo if we have a violation ID
+    if (reportId) {
+      try {
+        await uploadViolationPhoto(reportId, photo.uri, 'context');
+      } catch (e) {
+        console.error('Failed to upload wide photo', e);
+      }
+    }
+
+    router.replace('/photo-gallery');
   };
 
   const handleSkip = () => {
     setWidePhoto(null);
-    router.replace('/signs-selection');
+    router.replace('/photo-gallery');
   };
 
   return (

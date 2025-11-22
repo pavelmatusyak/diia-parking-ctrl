@@ -7,7 +7,7 @@ export default function ConfirmPhotoScreen() {
 
   const handleCapture = async (photo: { uri: string }) => {
     setConfirmPhoto(photo.uri);
-    router.replace('/final-success');
+    router.replace('/violation-details');
   };
 
   return (

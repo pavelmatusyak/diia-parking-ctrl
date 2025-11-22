@@ -1,10 +1,12 @@
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import StreamingResponse
 import time
 import logging
 from datetime import datetime
 import redis.asyncio as redis
 from typing import Callable
+import json
 
 from settings import settings
 
@@ -137,5 +139,97 @@ class AuditMiddleware(BaseHTTPMiddleware):
                     "status_code": response.status_code,
                 },
             )
+
+        return response
+
+
+class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: Callable):
+        request_id = request.headers.get("X-Request-ID", "")
+
+        if request.url.path in ["/api/docs", "/api/redoc", "/api/openapi.json"] or request.url.path.startswith("/storage"):
+            return await call_next(request)
+
+        request_body = None
+        if request.method in ["POST", "PUT", "PATCH"]:
+            try:
+                body_bytes = await request.body()
+                if body_bytes:
+                    try:
+                        request_body = body_bytes.decode("utf-8")
+                        try:
+                            request_body = json.loads(request_body)
+                        except json.JSONDecodeError:
+                            pass
+                    except UnicodeDecodeError:
+                        request_body = "<binary data>"
+
+                async def receive():
+                    return {"type": "http.request", "body": body_bytes}
+
+                request._receive = receive
+            except Exception as e:
+                print(f"Error reading request body: {e}")
+
+        print("\n" + "="*80)
+        print(f"📥 INCOMING REQUEST")
+        print("="*80)
+        print(f"Request ID: {request_id}")
+        print(f"Method: {request.method}")
+        print(f"Path: {request.url.path}")
+        print(f"Query Params: {dict(request.query_params)}")
+        print(f"Headers: {dict(request.headers)}")
+        if request_body:
+            print(f"Body: {json.dumps(request_body, indent=2) if isinstance(request_body, dict) else request_body}")
+        print("="*80 + "\n")
+
+        response = await call_next(request)
+
+        response_body = None
+        response_body_bytes = b""
+
+        if hasattr(response, "body_iterator"):
+            response_body_parts = []
+            async for chunk in response.body_iterator:
+                response_body_parts.append(chunk)
+                response_body_bytes += chunk
+
+            async def new_body_iterator():
+                for chunk in response_body_parts:
+                    yield chunk
+
+            response.body_iterator = new_body_iterator()
+
+            try:
+                response_body = response_body_bytes.decode("utf-8")
+                try:
+                    response_body = json.loads(response_body)
+                except json.JSONDecodeError:
+                    pass
+            except UnicodeDecodeError:
+                response_body = "<binary data>"
+        elif hasattr(response, "body"):
+            try:
+                response_body = response.body.decode("utf-8")
+                try:
+                    response_body = json.loads(response_body)
+                except json.JSONDecodeError:
+                    pass
+            except (UnicodeDecodeError, AttributeError):
+                response_body = "<binary data>"
+        elif isinstance(response, StreamingResponse):
+            response_body = "<streaming response>"
+
+        print("\n" + "="*80)
+        print(f"📤 OUTGOING RESPONSE")
+        print("="*80)
+        print(f"Request ID: {request_id}")
+        print(f"Method: {request.method}")
+        print(f"Path: {request.url.path}")
+        print(f"Status Code: {response.status_code}")
+        print(f"Headers: {dict(response.headers)}")
+        if response_body:
+            print(f"Body: {json.dumps(response_body, indent=2) if isinstance(response_body, dict) else response_body}")
+        print("="*80 + "\n")
 
         return response

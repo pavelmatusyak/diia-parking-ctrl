@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    API_BASE_URL: str = "http://localhost:8000"  # Change to your public URL in production
+    API_BASE_URL: str = "http://backend-alb-757973064.eu-central-1.elb.amazonaws.com"  # Change to your public URL in production
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5440/parking_violations"
