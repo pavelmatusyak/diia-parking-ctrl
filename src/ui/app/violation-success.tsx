@@ -89,14 +89,24 @@ export default function ViolationSuccessScreen() {
                             <View style={styles.section}>
                                 <ThemedText style={styles.sectionTitle}>Фотографії ({evidence.photos.length})</ThemedText>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
-                                    {evidence.photos.map((photo) => (
-                                        <Image
-                                            key={photo.id}
-                                            source={{ uri: photo.url }}
-                                            style={styles.photoThumbnail}
-                                            resizeMode="cover"
-                                        />
-                                    ))}
+                                    {evidence.photos.map((photo) => {
+                                        // Ensure URL is absolute
+                                        const photoUrl = photo.url.startsWith('http')
+                                            ? photo.url
+                                            : `${process.env.EXPO_PUBLIC_BACKEND_URL?.replace('/api/v1', '')}${photo.url}`;
+
+                                        console.log('Photo URL:', photoUrl);
+
+                                        return (
+                                            <Image
+                                                key={photo.id}
+                                                source={{ uri: photoUrl }}
+                                                style={styles.photoThumbnail}
+                                                resizeMode="cover"
+                                                onError={(e) => console.error('Image load error:', e.nativeEvent.error)}
+                                            />
+                                        );
+                                    })}
                                 </ScrollView>
                             </View>
                         )}

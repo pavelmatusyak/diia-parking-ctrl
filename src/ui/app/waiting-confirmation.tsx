@@ -1,185 +1,280 @@
-import { useEffect, useState } from 'react';
-import { AppState, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/constants/themed-view';
-import { router } from 'expo-router';
-import { Colors } from '@/constants/theme';
+import { useViolationContext } from '@/context/violation-context';
+import { getTimerStatus, uploadViolationPhoto } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
-import * as Notifications from 'expo-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const COUNTDOWN_SECONDS = 5 * 60; // 5 minutes
-
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-    }),
-});
-
 export default function WaitingConfirmationScreen() {
-    const [remaining, setRemaining] = useState<number>(0);
-    const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme ?? 'light'];
     const insets = useSafeAreaInsets();
-
-    const loadTimer = async () => {
-        const stored = await SecureStore.getItemAsync("endTimestamp");
-        if (stored) {
-            const end = Number(stored);
-            const diff = Math.max(0, Math.floor((end - Date.now()) / 1000));
-            setRemaining(diff);
-        } else {
-            const end = Date.now() + COUNTDOWN_SECONDS * 1000;
-            await SecureStore.setItemAsync("endTimestamp", String(end));
-            setRemaining(COUNTDOWN_SECONDS);
-            scheduleTimerNotification(COUNTDOWN_SECONDS);
-        }
-    };
-
-    const scheduleTimerNotification = async (seconds: number) => {
-        const { status } = await Notifications.requestPermissionsAsync();
-        if (status === 'granted') {
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title: "Час вийшов!",
-                    body: "Можна зробити повторне фото для підтвердження порушення.",
-                },
-                trigger: {
-                    seconds,
-                    repeats: false,
-                } as Notifications.NotificationTriggerInput,
-            });
-        }
-    };
+    const { reportId } = useViolationContext();
+    const [timerStatus, setTimerStatus] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [takingPhoto, setTakingPhoto] = useState(false);
 
     useEffect(() => {
-        loadTimer();
-        const sub = AppState.addEventListener("change", (nextAppState) => {
-            if (nextAppState === 'active') loadTimer();
-        });
-        return () => sub.remove();
-    }, []);
+        if (!reportId) {
+            console.error('No reportId in waiting-confirmation');
+            setLoading(false);
+            setTimeout(() => router.back(), 2000);
+            return;
+        }
 
-    useEffect(() => {
-        if (remaining <= 0) return;
-        const interval = setInterval(() => {
-            setRemaining((prev) => Math.max(prev - 1, 0));
+        console.log('Starting timer polling for reportId:', reportId);
+
+        // Poll timer status every second
+        const interval = setInterval(async () => {
+            try {
+                const status = await getTimerStatus(reportId);
+                setTimerStatus(status);
+                setLoading(false);
+
+                // If timer is complete, stop polling
+                if (status.can_submit) {
+                    clearInterval(interval);
+                }
+            } catch (error) {
+                console.error('Failed to get timer status:', error);
+            }
         }, 1000);
+
         return () => clearInterval(interval);
-    }, [remaining]);
+    }, [reportId]);
 
-    const safeRemaining = remaining ?? 0;
-    const minutes = Math.floor(safeRemaining / 60);
-    const seconds = safeRemaining % 60;
-    const timerText = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-
-    const handleNext = () => {
-        if (safeRemaining > 0) return;
-        router.replace("/confirm-photo");
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
+
+    const handleTakePhoto = () => {
+        // Navigate to camera to take verification photo
+        router.push('/plate-camera');
+    };
+
+    const handleSubmit = () => {
+        // Navigate back to violation details to retry submission
+        router.push('/violation-success');
+    };
+
+    if (loading) {
+        return (
+            <ThemedView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#007AFF" />
+                    <ThemedText style={styles.loadingText}>
+                        Завантаження статусу таймера...
+                    </ThemedText>
+                </View>
+            </ThemedView>
+        );
+    }
+
+    const canSubmit = timerStatus?.can_submit || false;
+    const secondsRemaining = timerStatus?.seconds_remaining || 0;
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-            <View style={styles.content}>
-                <View style={[styles.iconBox, { backgroundColor: theme.tint }]}>
-                    <Ionicons name="hourglass-outline" size={32} color="#fff" />
-                </View>
-
-                <ThemedText type="title" style={styles.mainTitle}>
+        <ThemedView style={styles.container}>
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color="#000" />
+                </TouchableOpacity>
+                <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
                     Очікування підтвердження
                 </ThemedText>
-
-                <ThemedText style={styles.ruleText}>
-                    Згідно з ПДР, для фіксації стоянки транспортний засіб має перебувати на місці не менше 5 хвилин.
-                </ThemedText>
-
-                <View style={styles.timerContainer}>
-                    <ThemedText style={[styles.timerValue, { color: theme.text }]}>{timerText}</ThemedText>
-                    <ThemedText style={styles.timerLabel}>залишилось часу</ThemedText>
-                </View>
-
-                <View style={[styles.infoBlock, { backgroundColor: '#FFF9C4' }]}>
-                    <Ionicons name="warning-outline" size={20} color="#F57F17" style={styles.infoIcon} />
-                    <ThemedText style={[styles.infoText, { color: '#F57F17' }]}>
-                        Не відходьте далеко від авто. Вам потрібно буде зробити повторне фото через 5 хвилин.
-                    </ThemedText>
-                </View>
-
-                <View style={[styles.infoBlock, { backgroundColor: '#E3F2FD' }]}>
-                    <Ionicons name="notifications-outline" size={20} color="#1976D2" style={styles.infoIcon} />
-                    <ThemedText style={[styles.infoText, { color: '#1976D2' }]}>
-                        Ви можете згорнути додаток. Ми надішлемо сповіщення, коли таймер завершиться.
-                    </ThemedText>
-                </View>
+                <View style={{ width: 44 }} />
             </View>
 
-            <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-                <TouchableOpacity
-                    style={[styles.button, { backgroundColor: theme.tint }, safeRemaining > 0 && styles.buttonDisabled]}
-                    onPress={handleNext}
-                    disabled={safeRemaining > 0}
-                >
-                    <ThemedText style={styles.buttonText}>
-                        {safeRemaining > 0 ? 'Зачекайте завершення таймера' : 'Зробити повторне фото'}
-                    </ThemedText>
-                </TouchableOpacity>
+            <View style={styles.content}>
+                {!canSubmit ? (
+                    <>
+                        {/* Timer Display */}
+                        <View style={styles.timerContainer}>
+                            <Ionicons name="time-outline" size={80} color="#007AFF" />
+                            <ThemedText style={styles.timerTitle}>
+                                Таймер активний
+                            </ThemedText>
+                            <View style={styles.timerDisplay}>
+                                <ThemedText style={styles.timerText}>
+                                    {formatTime(secondsRemaining)}
+                                </ThemedText>
+                            </View>
+                            <ThemedText style={styles.timerDescription}>
+                                Для підтвердження порушення необхідно зачекати 5 хвилин.
+                                Це гарантує, що автомобіль все ще припаркований.
+                            </ThemedText>
+                        </View>
+
+                        {/* Info Box */}
+                        <View style={styles.infoBox}>
+                            <Ionicons name="information-circle" size={24} color="#007AFF" />
+                            <ThemedText style={styles.infoText}>
+                                Після завершення таймера вам потрібно буде зробити ще одне фото
+                                автомобіля для підтвердження.
+                            </ThemedText>
+                        </View>
+                    </>
+                ) : (
+                    <>
+                        {/* Timer Complete */}
+                        <View style={styles.completeContainer}>
+                            <Ionicons name="checkmark-circle" size={80} color="#34C759" />
+                            <ThemedText style={styles.completeTitle}>
+                                Таймер завершено!
+                            </ThemedText>
+                            <ThemedText style={styles.completeDescription}>
+                                Тепер зробіть ще одне фото автомобіля для підтвердження порушення
+                            </ThemedText>
+                        </View>
+
+                        {/* Take Photo Button */}
+                        <TouchableOpacity
+                            style={styles.photoButton}
+                            onPress={handleTakePhoto}
+                        >
+                            <Ionicons name="camera" size={24} color="#fff" />
+                            <ThemedText style={styles.photoButtonText}>
+                                Зробити фото підтвердження
+                            </ThemedText>
+                        </TouchableOpacity>
+
+                        {/* Or Submit Button */}
+                        <TouchableOpacity
+                            style={styles.submitButton}
+                            onPress={handleSubmit}
+                        >
+                            <ThemedText style={styles.submitButtonText}>
+                                Продовжити без фото
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </>
+                )}
             </View>
-        </View>
+        </ThemedView>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    content: { flex: 1, padding: 24, alignItems: 'center' },
-    iconBox: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+    loadingContainer: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 5
+        padding: 20,
     },
-    mainTitle: { fontSize: 24, textAlign: 'center', marginBottom: 12 },
-    ruleText: { fontSize: 16, textAlign: 'center', opacity: 0.7, lineHeight: 22, marginBottom: 32 },
-
-    timerContainer: { alignItems: 'center', marginBottom: 32 },
-    timerValue: { fontSize: 56, fontWeight: '700', fontVariant: ['tabular-nums'] },
-    timerLabel: { fontSize: 14, opacity: 0.5, textTransform: 'uppercase', letterSpacing: 1 },
-
-    infoBlock: {
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        opacity: 0.6,
+    },
+    header: {
         flexDirection: 'row',
-        width: '100%',
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 16,
-        alignItems: 'flex-start',
-        gap: 12
-    },
-    infoIcon: { marginTop: 2 },
-    infoText: { flex: 1, fontSize: 14, lineHeight: 20, fontWeight: '500' },
-
-    footer: { paddingHorizontal: 20 },
-    button: {
-        width: '100%',
-        paddingVertical: 18,
-        borderRadius: 16,
+        justifyContent: 'space-between',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 5
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E5EA',
     },
-    buttonDisabled: { opacity: 0.5, shadowOpacity: 0 },
-    buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+    backButton: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: { fontSize: 18 },
+    content: {
+        flex: 1,
+        padding: 20,
+        justifyContent: 'center',
+    },
+    timerContainer: {
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    timerTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        marginTop: 20,
+        marginBottom: 20,
+    },
+    timerDisplay: {
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 40,
+        paddingVertical: 20,
+        borderRadius: 20,
+        marginBottom: 20,
+    },
+    timerText: {
+        fontSize: 48,
+        fontWeight: '700',
+        color: '#fff',
+    },
+    timerDescription: {
+        fontSize: 16,
+        textAlign: 'center',
+        opacity: 0.7,
+        lineHeight: 24,
+        paddingHorizontal: 20,
+    },
+    infoBox: {
+        flexDirection: 'row',
+        backgroundColor: '#E3F2FD',
+        padding: 16,
+        borderRadius: 12,
+        gap: 12,
+    },
+    infoText: {
+        flex: 1,
+        fontSize: 14,
+        color: '#007AFF',
+        lineHeight: 20,
+    },
+    completeContainer: {
+        alignItems: 'center',
+        marginBottom: 40,
+    },
+    completeTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        marginTop: 20,
+        marginBottom: 12,
+    },
+    completeDescription: {
+        fontSize: 16,
+        textAlign: 'center',
+        opacity: 0.7,
+        lineHeight: 24,
+        paddingHorizontal: 20,
+    },
+    photoButton: {
+        backgroundColor: '#007AFF',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        borderRadius: 12,
+        marginBottom: 12,
+        gap: 8,
+    },
+    photoButtonText: {
+        color: '#fff',
+        fontSize: 17,
+        fontWeight: '700',
+    },
+    submitButton: {
+        backgroundColor: '#F5F5F5',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    submitButtonText: {
+        color: '#007AFF',
+        fontSize: 17,
+        fontWeight: '600',
+    },
 });

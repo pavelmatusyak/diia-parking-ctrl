@@ -14,7 +14,7 @@ export default function HomeScreen() {
     const [backendStatus, setBackendStatus] = useState<string>('Перевірка...');
 
     const handleCreateTicket = () => {
-        router.push('/create-ticket' as any);
+        router.push('/map-selection');
     };
 
     useEffect(() => {

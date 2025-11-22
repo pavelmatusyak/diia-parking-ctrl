@@ -15,6 +15,7 @@ from routes.health import router as health_router
 from routes.reports import router as reports_router
 from routes.parking_analysis import router as parking_analysis_router
 from routes.auth import router as auth_router
+from foundation.middleware import RequestResponseLoggingMiddleware
 
 logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
@@ -39,6 +40,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(RequestResponseLoggingMiddleware)
 
 
 @app.exception_handler(Exception)

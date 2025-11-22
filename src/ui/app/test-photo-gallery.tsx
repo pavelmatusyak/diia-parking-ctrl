@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, Platform, ActivityIndicator } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/constants/themed-view';
@@ -10,19 +10,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const MAX_PHOTOS = 5;
 
-export default function PhotoGalleryScreen() {
-    const insets = useSafeAreaInsets();
-    const { platePhoto, widePhoto, signsPhotos, reportId, setReportId, addSignPhoto, setWidePhoto } = useViolationContext();
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [uploadType, setUploadType] = useState<'initial' | 'context'>('context');
-    const [uploading, setUploading] = useState(false);
+// Test images from notebooks directory
+const TEST_IMAGES = [
+    '/notebooks/img_1.png',
+    '/notebooks/car_with_drivers.png',
+    '/notebooks/car_driver+lighs.png',
+    '/notebooks/car_headlights.png',
+    '/notebooks/img.png',
+];
 
-    // Auto-create violation if not exists (for testing)
+export default function TestPhotoGalleryScreen() {
+    const insets = useSafeAreaInsets();
+    const { reportId, setReportId } = useViolationContext();
+    const [photos, setPhotos] = useState<string[]>([]);
+    const [uploading, setUploading] = useState(false);
+    const [currentUpload, setCurrentUpload] = useState<string>('');
+
+    // Auto-create violation if not exists
     useEffect(() => {
         const initViolation = async () => {
             if (!reportId) {
                 try {
-                    console.log('Creating test violation...');
                     const violation = await createViolation(50.4501, 30.5234, 'Test violation from photo gallery');
                     setReportId(violation.id);
                     console.log('Created test violation:', violation.id);
@@ -34,140 +42,101 @@ export default function PhotoGalleryScreen() {
         initViolation();
     }, [reportId, setReportId]);
 
-    // Calculate total photos (plate photo is always first)
-    const allPhotos = [
-        platePhoto,
-        widePhoto,
-        ...signsPhotos
-    ].filter(Boolean);
+    const canAddMore = photos.length < MAX_PHOTOS;
 
-    const canAddMore = allPhotos.length < MAX_PHOTOS;
-
-    const handleFileSelect = async (event: any) => {
-        const file = event.target.files?.[0];
-        if (!file) {
-            console.log('No file selected');
+    const handleAddTestPhoto = async (type: 'initial' | 'context') => {
+        if (!canAddMore) {
+            Alert.alert('Ліміт фото', `Ви можете додати максимум ${MAX_PHOTOS} фото`);
             return;
         }
-
-        console.log('File selected:', file.name, file.type, file.size);
 
         if (!reportId) {
-            Alert.alert('Помилка', 'Відсутній ідентифікатор порушення. Спробуйте пізніше.');
+            Alert.alert('Помилка', 'Спочатку потрібно створити порушення');
             return;
         }
 
+        const imageIndex = photos.length;
+        if (imageIndex >= TEST_IMAGES.length) {
+            Alert.alert('Помилка', 'Немає більше тестових зображень');
+            return;
+        }
+
+        const testImagePath = TEST_IMAGES[imageIndex];
         setUploading(true);
+        setCurrentUpload(type === 'initial' ? 'Завантаження з OCR...' : 'Завантаження фото знаку...');
 
         try {
-            // Convert file to data URL
-            const dataUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
+            // Convert local path to blob for upload
+            const response = await fetch(`http://localhost:8082${testImagePath}`);
+            const blob = await response.blob();
+
+            // Create a data URL from the blob
+            const reader = new FileReader();
+            const dataUrl = await new Promise<string>((resolve) => {
                 reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(blob);
             });
 
-            console.log('Uploading photo, type:', uploadType, 'reportId:', reportId);
-
             // Upload to backend
-            const result = await uploadViolationPhoto(reportId, dataUrl, uploadType);
+            await uploadViolationPhoto(reportId, dataUrl, type);
 
-            console.log('Upload successful:', result);
+            // Add to local photos array
+            setPhotos([...photos, `http://localhost:8082${testImagePath}`]);
 
-            // Update context with the photo
-            if (uploadType === 'initial') {
-                setWidePhoto(dataUrl);
-            } else {
-                addSignPhoto(dataUrl);
-            }
-
-            Alert.alert('Успіх', 'Фото успішно завантажено');
+            Alert.alert('Успіх', `Фото ${type === 'initial' ? 'з OCR' : 'знаку'} успішно завантажено`);
         } catch (error: any) {
-            console.error('Failed to upload file:', error);
+            console.error('Failed to upload test photo:', error);
             Alert.alert('Помилка', error.message || 'Не вдалося завантажити фото');
         } finally {
             setUploading(false);
-            // Reset file input
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-        }
-    };
-
-    const handleAddOCRPhoto = () => {
-        if (!canAddMore) {
-            Alert.alert('Ліміт фото', `Ви можете додати максимум ${MAX_PHOTOS} фото`);
-            return;
-        }
-
-        if (Platform.OS === 'web') {
-            // On web, show file picker - use 'context' type (plate photo was already 'initial')
-            setUploadType('context');
-            fileInputRef.current?.click();
-        } else {
-            // On native, go to camera
-            router.push('/wide-photo');
-        }
-    };
-
-    const handleAddSignPhoto = () => {
-        if (!canAddMore) {
-            Alert.alert('Ліміт фото', `Ви можете додати максимум ${MAX_PHOTOS} фото`);
-            return;
-        }
-
-        if (Platform.OS === 'web') {
-            // On web, show file picker - use 'context' type
-            setUploadType('context');
-            fileInputRef.current?.click();
-        } else {
-            // On native, go to camera
-            router.push('/signs-camera');
+            setCurrentUpload('');
         }
     };
 
     const handleContinue = () => {
-        router.push('/violation-details');
+        if (photos.length === 0) {
+            Alert.alert('Увага', 'Додайте хоча б одне фото');
+            return;
+        }
+        router.push('/parking-analysis');
     };
 
     return (
         <ThemedView style={styles.container}>
-            {/* Hidden file input for web */}
-            {Platform.OS === 'web' && (
-                <input
-                    ref={fileInputRef as any}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleFileSelect}
-                />
-            )}
-
             {/* Header */}
             <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                    Фотографії ({allPhotos.length}/{MAX_PHOTOS})
+                    Тестова Галерея ({photos.length}/{MAX_PHOTOS})
                 </ThemedText>
                 <View style={{ width: 44 }} />
             </View>
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-                <ThemedText style={styles.subtitle}>
-                    Додайте додаткові фото для підтвердження порушення
-                </ThemedText>
+                <View style={styles.infoBox}>
+                    <Ionicons name="information-circle" size={24} color="#007AFF" />
+                    <ThemedText style={styles.infoText}>
+                        Тестовий режим: використовуються зображення з notebooks/
+                    </ThemedText>
+                </View>
+
+                {reportId && (
+                    <View style={styles.violationIdBox}>
+                        <ThemedText style={styles.violationIdLabel}>Violation ID:</ThemedText>
+                        <ThemedText style={styles.violationIdText}>{reportId}</ThemedText>
+                    </View>
+                )}
 
                 {/* Photo Grid */}
                 <View style={styles.photoGrid}>
-                    {allPhotos.map((photo, index) => photo && (
+                    {photos.map((photo, index) => (
                         <View key={index} style={styles.photoCard}>
                             <Image source={{ uri: photo }} style={styles.photoImage} />
                             <View style={styles.photoLabel}>
                                 <ThemedText style={styles.photoLabelText}>
-                                    {index === 0 ? 'Номерний знак' : `Фото ${index + 1}`}
+                                    Фото {index + 1}
                                 </ThemedText>
                             </View>
                         </View>
@@ -177,19 +146,19 @@ export default function PhotoGalleryScreen() {
                 {/* Add Photo Buttons */}
                 {canAddMore && !uploading && (
                     <View style={styles.addButtonsContainer}>
-                        <ThemedText style={styles.addTitle}>Додати ще фото:</ThemedText>
+                        <ThemedText style={styles.addTitle}>Додати тестове фото:</ThemedText>
 
                         <TouchableOpacity
                             style={styles.addButton}
-                            onPress={handleAddOCRPhoto}
+                            onPress={() => handleAddTestPhoto('initial')}
                         >
                             <Ionicons name="car" size={24} color="#007AFF" />
                             <View style={styles.addButtonText}>
                                 <ThemedText style={styles.addButtonTitle}>
-                                    Фото автомобіля
+                                    Фото з OCR
                                 </ThemedText>
                                 <ThemedText style={styles.addButtonSubtitle}>
-                                    З розпізнаванням номера
+                                    Розпізнавання номера
                                 </ThemedText>
                             </View>
                             <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
@@ -197,12 +166,12 @@ export default function PhotoGalleryScreen() {
 
                         <TouchableOpacity
                             style={styles.addButton}
-                            onPress={handleAddSignPhoto}
+                            onPress={() => handleAddTestPhoto('context')}
                         >
                             <Ionicons name="warning" size={24} color="#007AFF" />
                             <View style={styles.addButtonText}>
                                 <ThemedText style={styles.addButtonTitle}>
-                                    Фото знаку або розмітки
+                                    Фото знаку
                                 </ThemedText>
                                 <ThemedText style={styles.addButtonSubtitle}>
                                     Контекстне фото
@@ -214,11 +183,9 @@ export default function PhotoGalleryScreen() {
                 )}
 
                 {uploading && (
-                    <View style={styles.uploadingContainer}>
+                    <View style={styles.uploadingBox}>
                         <ActivityIndicator size="large" color="#007AFF" />
-                        <ThemedText style={styles.uploadingText}>
-                            Завантаження фото...
-                        </ThemedText>
+                        <ThemedText style={styles.uploadingText}>{currentUpload}</ThemedText>
                     </View>
                 )}
 
@@ -235,11 +202,12 @@ export default function PhotoGalleryScreen() {
             {/* Continue Button */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
                 <TouchableOpacity
-                    style={styles.continueButton}
+                    style={[styles.continueButton, (photos.length === 0 || uploading) && styles.continueButtonDisabled]}
                     onPress={handleContinue}
+                    disabled={photos.length === 0 || uploading}
                 >
                     <ThemedText style={styles.continueButtonText}>
-                        Продовжити
+                        Продовжити до аналізу
                     </ThemedText>
                 </TouchableOpacity>
             </View>
@@ -269,10 +237,34 @@ const styles = StyleSheet.create({
     content: {
         padding: 20,
     },
-    subtitle: {
-        fontSize: 16,
-        marginBottom: 20,
-        opacity: 0.7,
+    infoBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E3F2FD',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+        gap: 8,
+    },
+    infoText: {
+        flex: 1,
+        fontSize: 14,
+        color: '#007AFF',
+    },
+    violationIdBox: {
+        backgroundColor: '#F5F5F5',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    violationIdLabel: {
+        fontSize: 12,
+        opacity: 0.6,
+        marginBottom: 4,
+    },
+    violationIdText: {
+        fontSize: 14,
+        fontFamily: 'monospace',
     },
     photoGrid: {
         flexDirection: 'row',
@@ -333,7 +325,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         opacity: 0.6,
     },
-    uploadingContainer: {
+    uploadingBox: {
         alignItems: 'center',
         padding: 32,
     },
@@ -361,6 +353,9 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: 'center',
+    },
+    continueButtonDisabled: {
+        opacity: 0.5,
     },
     continueButtonText: {
         color: '#fff',
