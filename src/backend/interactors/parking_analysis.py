@@ -69,6 +69,8 @@ ANALYSIS_PROMPT = """Ти — інспектор з паркування та е
 11. Велодоріжка / велосмуга
 12. Закриття світлофора або дорожніх знаків
 13. Блокування проїзду іншими ТЗ
+14. parking_prohibited_zone   (знак 3.35)
+15. parking_time_limited_zone (якщо в правилах діє обмеження на стоянку, але зупинка дозволена)
 
 ## 4. Тлумачення probability:
 
@@ -102,7 +104,9 @@ ANALYSIS_PROMPT = """Ти — інспектор з паркування та е
     "pedestrian_zone": число 0.0-1.0,
     "cycleway": число 0.0-1.0,
     "blocking_traffic_signal": число 0.0-1.0,
-    "blocking_roadway": число 0.0-1.0
+    "blocking_roadway": число 0.0-1.0,
+    "parking_prohibited_zone": число 0.0-1.0,
+    "parking_time_limited_zone": число 0.0-1.0
   }},
   "reasons": [
     {{
