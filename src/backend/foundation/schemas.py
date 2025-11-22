@@ -68,6 +68,7 @@ class ViolationResponse(BaseModel):
     violation_reason: Optional[str] = None
     violation_code: Optional[str] = None
     violation_type: Optional[str] = None
+    violations: Optional[list[dict]] = None
     timer_started_at: Optional[datetime] = None
     has_road_sign_photo: bool = False
 
@@ -113,10 +114,14 @@ class VerificationResponse(BaseModel):
     message: str
 
 
-class SubmitViolationRequest(BaseModel):
+class ViolationItem(BaseModel):
     violation_reason: str = Field(..., min_length=1, max_length=500)
     violation_code: str = Field(..., min_length=1, max_length=50)
     violation_type: Optional[str] = Field(None, max_length=100)
+
+
+class SubmitViolationRequest(BaseModel):
+    violations: list[ViolationItem] = Field(..., min_items=1, description="List of violations")
     notes: Optional[str] = None
 
 
