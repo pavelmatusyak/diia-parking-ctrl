@@ -82,9 +82,8 @@ Response:
 }
 ```
 
-#### 2. Recognize License Plate (EasyOCR - Default)
+#### 2. Recognize License Plate
 ```bash
-POST /recognize
 POST /recognize_ocr
 Content-Type: multipart/form-data
 ```
@@ -102,14 +101,14 @@ Parameters:
 
 Example using curl:
 ```bash
-curl -X POST -F "image=@path/to/car_image.jpg" http://localhost:5000/recognize
+curl -X POST -F "image=@path/to/car_image.jpg" http://localhost:5000/recognize_crnn
 ```
 
 Example using Python:
 ```python
 import requests
 
-url = 'http://localhost:5000/recognize'
+url = 'http://localhost:5000/recognize_crnn'
 files = {'image': open('car_image.jpg', 'rb')}
 response = requests.post(url, files=files)
 print(response.json())
@@ -186,7 +185,7 @@ if __name__ == '__main__':
 
 ## Image Processing Pipeline
 
-### EasyOCR Pipeline (`/recognize`):
+### EasyOCR Pipeline (`/recognize_ocr`):
 ```
 Input Image
     ↓
@@ -235,7 +234,12 @@ Output Text + Confidence
 
 ```bash
 # Test single image
-curl -X POST -F "image=@test_image.jpg" http://localhost:5000/recognize
+curl -X POST -F "image=@test_image.jpg" http://localhost:5000/recognize_crnn
+
+# Test two images
+curl -X POST http://localhost:5000/is_running \
+  -F "photo1=@/path/to/file1.jpg" \
+  -F "photo2=@/path/to/file2.jpg"
 
 # Test with Python script
 python test_api.py
