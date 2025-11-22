@@ -322,11 +322,6 @@ class ViolationInteractor:
                 detail="Timer already started",
             )
 
-        if violation.has_road_sign_photo:
-            raise HTTPException(
-                status_code=400,
-                detail="Timer not required when road sign photo is uploaded",
-            )
 
         violation.timer_started_at = datetime.utcnow()
         await self.db.commit()
@@ -376,7 +371,7 @@ class ViolationInteractor:
         )
 
         # Enforce timer if any violation requires it
-        if requires_timer and not violation.has_road_sign_photo:
+        if requires_timer:
             if not violation.timer_started_at:
                 raise HTTPException(
                     status_code=400,
