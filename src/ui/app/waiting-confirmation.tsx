@@ -64,7 +64,7 @@ export default function WaitingConfirmationScreen() {
         return (
             <ThemedView style={styles.container}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#007AFF" />
+                    <ActivityIndicator size="large" color="#000000" />
                     <ThemedText style={styles.loadingText}>
                         Завантаження статусу таймера...
                     </ThemedText>
@@ -81,12 +81,12 @@ export default function WaitingConfirmationScreen() {
             {/* Header */}
             <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
+                    <Ionicons name="arrow-back" size={24} color="#111827" />
                 </TouchableOpacity>
                 <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
                     Очікування підтвердження
                 </ThemedText>
-                <View style={{ width: 44 }} />
+                <View style={{ width: 48 }} />
             </View>
 
             <View style={styles.content}>
@@ -94,7 +94,7 @@ export default function WaitingConfirmationScreen() {
                     <>
                         {/* Timer Display */}
                         <View style={styles.timerContainer}>
-                            <Ionicons name="time-outline" size={80} color="#007AFF" />
+                            <Ionicons name="time-outline" size={80} color="#C0C0C0" />
                             <ThemedText style={styles.timerTitle}>
                                 Таймер активний
                             </ThemedText>
@@ -111,7 +111,7 @@ export default function WaitingConfirmationScreen() {
 
                         {/* Info Box */}
                         <View style={styles.infoBox}>
-                            <Ionicons name="information-circle" size={24} color="#007AFF" />
+                            <Ionicons name="information-circle" size={24} color="#6B7280" />
                             <ThemedText style={styles.infoText}>
                                 Після завершення таймера вам потрібно буде зробити ще одне фото
                                 автомобіля для підтвердження.
@@ -122,7 +122,7 @@ export default function WaitingConfirmationScreen() {
                     <>
                         {/* Timer Complete */}
                         <View style={styles.completeContainer}>
-                            <Ionicons name="checkmark-circle" size={80} color="#34C759" />
+                            <Ionicons name="checkmark-circle" size={80} color="#10B981" />
                             <ThemedText style={styles.completeTitle}>
                                 Таймер завершено!
                             </ThemedText>
@@ -159,122 +159,166 @@ export default function WaitingConfirmationScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
+        padding: 24,
     },
     loadingText: {
-        marginTop: 16,
+        marginTop: 20,
         fontSize: 16,
-        opacity: 0.6,
+        fontWeight: '500',
+        color: '#6B7280',
+        letterSpacing: -0.1,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         paddingBottom: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E5EA',
+        borderBottomColor: '#E5E7EB',
     },
     backButton: {
-        width: 44,
-        height: 44,
+        width: 48,
+        height: 48,
         justifyContent: 'center',
         alignItems: 'center',
+        borderRadius: 24,
     },
-    headerTitle: { fontSize: 18 },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#111827',
+        letterSpacing: -0.2,
+    },
     content: {
         flex: 1,
-        padding: 20,
+        padding: 24,
         justifyContent: 'center',
     },
     timerContainer: {
         alignItems: 'center',
-        marginBottom: 40,
+        marginBottom: 48,
     },
     timerTitle: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: '700',
-        marginTop: 20,
-        marginBottom: 20,
+        marginTop: 24,
+        marginBottom: 24,
+        color: '#111827',
+        letterSpacing: -0.5,
     },
     timerDisplay: {
-        backgroundColor: '#007AFF',
-        paddingHorizontal: 40,
-        paddingVertical: 20,
-        borderRadius: 20,
-        marginBottom: 20,
+        backgroundColor: '#000000',
+        paddingHorizontal: 48,
+        paddingVertical: 24,
+        borderRadius: 24,
+        marginBottom: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
     timerText: {
-        fontSize: 48,
-        fontWeight: '700',
-        color: '#fff',
+        fontSize: 56,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        letterSpacing: -1,
     },
     timerDescription: {
         fontSize: 16,
         textAlign: 'center',
-        opacity: 0.7,
+        color: '#6B7280',
         lineHeight: 24,
-        paddingHorizontal: 20,
+        paddingHorizontal: 32,
+        fontWeight: '500',
+        letterSpacing: -0.1,
     },
     infoBox: {
         flexDirection: 'row',
-        backgroundColor: '#E3F2FD',
-        padding: 16,
-        borderRadius: 12,
-        gap: 12,
+        backgroundColor: '#F3F4F6',
+        padding: 20,
+        borderRadius: 16,
+        gap: 16,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
     infoText: {
         flex: 1,
-        fontSize: 14,
-        color: '#007AFF',
-        lineHeight: 20,
+        fontSize: 15,
+        color: '#4B5563',
+        lineHeight: 22,
+        fontWeight: '500',
+        letterSpacing: -0.1,
     },
     completeContainer: {
         alignItems: 'center',
-        marginBottom: 40,
+        marginBottom: 48,
     },
     completeTitle: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: '700',
-        marginTop: 20,
-        marginBottom: 12,
+        marginTop: 24,
+        marginBottom: 16,
+        color: '#111827',
+        letterSpacing: -0.5,
     },
     completeDescription: {
         fontSize: 16,
         textAlign: 'center',
-        opacity: 0.7,
+        color: '#6B7280',
         lineHeight: 24,
-        paddingHorizontal: 20,
+        paddingHorizontal: 32,
+        fontWeight: '500',
+        letterSpacing: -0.1,
     },
     photoButton: {
-        backgroundColor: '#007AFF',
+        backgroundColor: '#000000',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 16,
-        borderRadius: 12,
-        marginBottom: 12,
-        gap: 8,
+        paddingVertical: 20,
+        borderRadius: 30,
+        marginBottom: 16,
+        gap: 12,
+        minHeight: 64,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
     photoButtonText: {
-        color: '#fff',
-        fontSize: 17,
+        color: '#FFFFFF',
+        fontSize: 18,
         fontWeight: '700',
+        letterSpacing: -0.2,
     },
     submitButton: {
-        backgroundColor: '#F5F5F5',
-        paddingVertical: 16,
-        borderRadius: 12,
+        backgroundColor: '#F3F4F6',
+        paddingVertical: 20,
+        borderRadius: 30,
         alignItems: 'center',
+        minHeight: 64,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
     submitButtonText: {
-        color: '#007AFF',
-        fontSize: 17,
-        fontWeight: '600',
+        color: '#111827',
+        fontSize: 18,
+        fontWeight: '700',
+        letterSpacing: -0.2,
     },
 });

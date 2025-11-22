@@ -42,7 +42,7 @@ export default function HomeScreen() {
                 <MaterialIcons
                     name="local-parking"
                     size={140}
-                    color={theme.tint}
+                    color="#C0C0C0"
                     style={styles.icon}
                 />
 
@@ -51,14 +51,14 @@ export default function HomeScreen() {
                 </ThemedText>
 
                 <TouchableOpacity
-                    style={[styles.button, { backgroundColor: theme.tint }]}
+                    style={styles.button}
                     onPress={handleCreateTicket}
                     activeOpacity={0.85}
                 >
                     <ThemedText style={styles.buttonText}>Створити квиток</ThemedText>
                 </TouchableOpacity>
 
-                <ThemedText style={{ marginTop: 20, textAlign: 'center', color: theme.tint }}>
+                <ThemedText style={styles.statusText}>
                     {backendStatus}
                 </ThemedText>
             </View>
@@ -67,23 +67,57 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
     content: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 30,
+        paddingHorizontal: 40,
     },
-    icon: { marginBottom: 20 },
-    title: { marginBottom: 40, textAlign: 'center', fontSize: 32, fontWeight: '700' },
+    icon: {
+        marginBottom: 32,
+        opacity: 0.9,
+    },
+    title: {
+        marginBottom: 48,
+        textAlign: 'center',
+        fontSize: 36,
+        fontWeight: '800',
+        letterSpacing: -1,
+        color: '#111827',
+    },
     button: {
-        width: '80%',
-        paddingVertical: 22,
-        borderRadius: 18,
+        width: '85%',
+        maxWidth: 400,
+        paddingVertical: 20,
+        borderRadius: 30,
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 75,
-        elevation: 4,
+        minHeight: 64,
+        backgroundColor: '#000000',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
-    buttonText: { fontSize: 20, fontWeight: '700', color: '#fff' },
+    buttonText: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: -0.3,
+    },
+    statusText: {
+        marginTop: 24,
+        textAlign: 'center',
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#6B7280',
+        letterSpacing: -0.1,
+    },
 });
