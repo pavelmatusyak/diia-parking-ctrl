@@ -140,49 +140,24 @@ export default function ViolationSuccessScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-    },
+    container: { flex: 1, backgroundColor: '#fff' },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 16, fontSize: 16, color: '#000' },
     successHeader: {
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingBottom: 30,
         borderBottomWidth: 1,
         borderBottomColor: '#E5E5EA',
+        backgroundColor: '#fff',
     },
-    successIconContainer: {
-        marginBottom: 16,
-    },
-    successTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        textAlign: 'center',
-        marginBottom: 8,
-    },
-    successSubtitle: {
-        fontSize: 16,
-        opacity: 0.6,
-        textAlign: 'center',
-    },
+    successIconContainer: { marginBottom: 16 },
+    successTitle: { fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 8, color: '#000' },
+    successSubtitle: { fontSize: 16, textAlign: 'center', color: '#333', opacity: 0.7 },
     scrollView: { flex: 1 },
-    content: {
-        padding: 20,
-    },
-    section: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 12,
-    },
+    content: { padding: 20 },
+    section: { marginBottom: 24 },
+    sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12, color: '#000' },
     plateContainer: {
         backgroundColor: '#FFD700',
         borderRadius: 8,
@@ -191,12 +166,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#000',
     },
-    plateText: {
-        fontSize: 32,
-        fontWeight: '700',
-        color: '#000',
-        letterSpacing: 4,
-    },
+    plateText: { fontSize: 32, fontWeight: '700', color: '#000', letterSpacing: 4 },
     infoCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -205,20 +175,9 @@ const styles = StyleSheet.create({
         padding: 16,
         gap: 12,
     },
-    infoText: {
-        flex: 1,
-        fontSize: 16,
-    },
-    photosScroll: {
-        marginTop: 8,
-    },
-    photoThumbnail: {
-        width: 120,
-        height: 120,
-        borderRadius: 12,
-        marginRight: 12,
-        backgroundColor: '#F5F5F5',
-    },
+    infoText: { flex: 1, fontSize: 16, color: '#000' },
+    photosScroll: { marginTop: 8 },
+    photoThumbnail: { width: 120, height: 120, borderRadius: 12, marginRight: 12, backgroundColor: '#F5F5F5' },
     violationItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -228,25 +187,8 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         gap: 12,
     },
-    violationText: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    footer: {
-        padding: 20,
-        borderTopWidth: 1,
-        borderTopColor: '#E5E5EA',
-    },
-    doneButton: {
-        backgroundColor: '#34C759',
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    doneButtonText: {
-        color: '#fff',
-        fontSize: 17,
-        fontWeight: '700',
-    },
+    violationText: { flex: 1, fontSize: 16, fontWeight: '500', color: '#000' },
+    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#E5E5EA', backgroundColor: '#fff' },
+    doneButton: { backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+    doneButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
 });
