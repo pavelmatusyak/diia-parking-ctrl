@@ -3,7 +3,7 @@
 # Variables
 PYTHON := python3
 PIP := pip3
-DOCKER_COMPOSE := docker-compose
+DOCKER_COMPOSE := docker compose
 APP_CONTAINER := parking-violations-api
 DB_CONTAINER := parking-violations-db
 REDIS_CONTAINER := parking-violations-redis

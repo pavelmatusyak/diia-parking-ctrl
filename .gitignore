@@ -465,3 +465,8 @@ paket-files/
 
 # CodeRush
 .cr/
+notebooks
+notebooks/
+notebooks/*
+.DS_Store
+local_storage
