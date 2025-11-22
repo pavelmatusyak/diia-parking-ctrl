@@ -1,0 +1,441 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-reason.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\violation-reason.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\waiting-confirmation.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\waiting-confirmation.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-success.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\violation-success.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-details.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\violation-details.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\photo-preview.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\photo-preview.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\modal.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\modal.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\map-selection.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\map-selection.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\create-ticket.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\create-ticket.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\plate-retake.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\plate-retake.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\wide-photo.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\wide-photo.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\camera.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\camera.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\themed-text.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\themed-text.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\parallax-scroll-view.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\parallax-scroll-view.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\haptic-tab.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\haptic-tab.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\CameraView.1.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:node_modules\\expo-camera\\src\\CameraView.1.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\package-lock.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:package-lock.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\external-link.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\external-link.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\constants\\theme.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:constants\\theme.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\themed-view.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\themed-view.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\hello-wave.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\hello-wave.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\package.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:package.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\CameraView.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:node_modules\\expo-camera\\src\\CameraView.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\index.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:node_modules\\expo-camera\\src\\index.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\newFile.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:node_modules\\expo-camera\\src\\newFile.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\services\\permissions.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:services\\permissions.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\services\\location.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:services\\location.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{e8b06f52-6d01-11d2-aa7d-00c04f990343}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "waiting-confirmation.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\waiting-confirmation.tsx",
+              "RelativeDocumentMoniker": "app\\waiting-confirmation.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\waiting-confirmation.tsx",
+              "RelativeToolTip": "app\\waiting-confirmation.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-20T12:42:50.548Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "violation-reason.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-reason.tsx",
+              "RelativeDocumentMoniker": "app\\violation-reason.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-reason.tsx",
+              "RelativeToolTip": "app\\violation-reason.tsx",
+              "ViewState": "AgIAACwAAAAAAAAAAAAAwE4AAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-20T15:46:25.936Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "violation-success.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-success.tsx",
+              "RelativeDocumentMoniker": "app\\violation-success.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-success.tsx",
+              "RelativeToolTip": "app\\violation-success.tsx",
+              "ViewState": "AgIAABEAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-20T15:46:51.699Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "violation-details.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-details.tsx",
+              "RelativeDocumentMoniker": "app\\violation-details.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\violation-details.tsx",
+              "RelativeToolTip": "app\\violation-details.tsx",
+              "ViewState": "AgIAAIwAAAAAAAAAAAAAwAoAAACMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-20T15:46:21.293Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "photo-preview.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\photo-preview.tsx",
+              "RelativeDocumentMoniker": "app\\photo-preview.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\photo-preview.tsx",
+              "RelativeToolTip": "app\\photo-preview.tsx",
+              "ViewState": "AgIAAHQAAAAAAAAAAAAAwA8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:23:35.267Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "map-selection.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\map-selection.tsx",
+              "RelativeDocumentMoniker": "app\\map-selection.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\map-selection.tsx",
+              "RelativeToolTip": "app\\map-selection.tsx",
+              "ViewState": "AgIAAJAAAAAAAAAAAAAmwAQBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-20T13:08:48.487Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "plate-retake.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\plate-retake.tsx",
+              "RelativeDocumentMoniker": "app\\plate-retake.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\plate-retake.tsx",
+              "RelativeToolTip": "app\\plate-retake.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-20T12:37:47.908Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "modal.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\modal.tsx",
+              "RelativeDocumentMoniker": "app\\modal.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\modal.tsx",
+              "RelativeToolTip": "app\\modal.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-17T08:07:55.635Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "wide-photo.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\wide-photo.tsx",
+              "RelativeDocumentMoniker": "app\\wide-photo.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\wide-photo.tsx",
+              "RelativeToolTip": "app\\wide-photo.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-20T15:44:30.724Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "create-ticket.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\create-ticket.tsx",
+              "RelativeDocumentMoniker": "app\\create-ticket.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\create-ticket.tsx",
+              "RelativeToolTip": "app\\create-ticket.tsx",
+              "ViewState": "AgIAACMAAAAAAAAAAAAAwJkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-19T20:05:34.796Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "camera.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\camera.tsx",
+              "RelativeDocumentMoniker": "app\\camera.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\app\\camera.tsx",
+              "RelativeToolTip": "app\\camera.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-20T13:08:36.937Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "themed-text.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\themed-text.tsx",
+              "RelativeDocumentMoniker": "components\\themed-text.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\themed-text.tsx",
+              "RelativeToolTip": "components\\themed-text.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:32:33.174Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "CameraView.1.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\CameraView.1.tsx",
+              "RelativeDocumentMoniker": "node_modules\\expo-camera\\src\\CameraView.1.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\CameraView.1.tsx",
+              "RelativeToolTip": "node_modules\\expo-camera\\src\\CameraView.1.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T11:02:39.153Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "haptic-tab.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\haptic-tab.tsx",
+              "RelativeDocumentMoniker": "components\\haptic-tab.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\haptic-tab.tsx",
+              "RelativeToolTip": "components\\haptic-tab.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T11:06:08.218Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "external-link.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\external-link.tsx",
+              "RelativeDocumentMoniker": "components\\external-link.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\external-link.tsx",
+              "RelativeToolTip": "components\\external-link.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:32:38.064Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "theme.ts",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\constants\\theme.ts",
+              "RelativeDocumentMoniker": "constants\\theme.ts",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\constants\\theme.ts",
+              "RelativeToolTip": "constants\\theme.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAApwAUAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:36:27.301Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "parallax-scroll-view.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\parallax-scroll-view.tsx",
+              "RelativeDocumentMoniker": "components\\parallax-scroll-view.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\parallax-scroll-view.tsx",
+              "RelativeToolTip": "components\\parallax-scroll-view.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:32:31.954Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "package-lock.json",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\package-lock.json",
+              "RelativeDocumentMoniker": "package-lock.json",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\package-lock.json",
+              "RelativeToolTip": "package-lock.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-11-16T11:10:09.39Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "themed-view.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\themed-view.tsx",
+              "RelativeDocumentMoniker": "components\\themed-view.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\themed-view.tsx",
+              "RelativeToolTip": "components\\themed-view.tsx",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:33:00.641Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "hello-wave.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\hello-wave.tsx",
+              "RelativeDocumentMoniker": "components\\hello-wave.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\components\\hello-wave.tsx",
+              "RelativeToolTip": "components\\hello-wave.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:32:55.458Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "package.json",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\package.json",
+              "RelativeDocumentMoniker": "package.json",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\package.json",
+              "RelativeToolTip": "package.json",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAuwCsAAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-11-16T11:05:00.461Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "newFile.ts",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\newFile.ts",
+              "RelativeDocumentMoniker": "node_modules\\expo-camera\\src\\newFile.ts",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\newFile.ts",
+              "RelativeToolTip": "node_modules\\expo-camera\\src\\newFile.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T11:03:05.845Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "CameraView.tsx",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\CameraView.tsx",
+              "RelativeDocumentMoniker": "node_modules\\expo-camera\\src\\CameraView.tsx",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\CameraView.tsx",
+              "RelativeToolTip": "node_modules\\expo-camera\\src\\CameraView.tsx",
+              "ViewState": "AgIAAIgAAAAAAAAAAAD4v7EAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T11:01:57.318Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "index.ts",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\index.ts",
+              "RelativeDocumentMoniker": "node_modules\\expo-camera\\src\\index.ts",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\node_modules\\expo-camera\\src\\index.ts",
+              "RelativeToolTip": "node_modules\\expo-camera\\src\\index.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:52:33.382Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "location.ts",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\services\\location.ts",
+              "RelativeDocumentMoniker": "services\\location.ts",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\services\\location.ts",
+              "RelativeToolTip": "services\\location.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:23:46.451Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "permissions.ts",
+              "DocumentMoniker": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\services\\permissions.ts",
+              "RelativeDocumentMoniker": "services\\permissions.ts",
+              "ToolTip": "D:\\\u043C\u043E\u0454\\diia-parking-ctrl-main\\diia-parking-ctrl-main\\src\\ui\\services\\permissions.ts",
+              "RelativeToolTip": "services\\permissions.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-11-16T10:23:45.506Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

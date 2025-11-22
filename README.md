@@ -10,11 +10,23 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Налаштуйте змінні середовища
+
+   Створіть файл `.env` в корені проекту з наступним вмістом:
+
+   ```env
+   EXPO_PUBLIC_BACKEND_URL=http://backend-alb-757973064.eu-central-1.elb.amazonaws.com/api/docs#/
+   ```
+
+   Замініть `https://your-backend-url.com` на URL вашого бекенду (без слешу в кінці).
+
+3. Start the app
 
    ```bash
    npx expo start
    ```
+
+   **Важливо:** Після зміни `.env` файлу перезапустіть сервер розробки (Ctrl+C і потім `npx expo start` знову).
 
 In the output, you'll find options to open the app in a
 
