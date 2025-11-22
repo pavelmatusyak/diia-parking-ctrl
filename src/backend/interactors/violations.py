@@ -366,7 +366,7 @@ class ViolationInteractor:
             )
 
         # Define violation types that require timer
-        TIMER_REQUIRED_TYPES = ["railway_crossing", "tram_track", "bridge_or_tunnel"]
+        TIMER_REQUIRED_TYPES = ["parking_prohibited_zone", "parking_time_limited_zone"]
 
         # Check if ANY violation in the list requires timer
         requires_timer = any(
