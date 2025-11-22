@@ -67,6 +67,7 @@ class ViolationResponse(BaseModel):
     notes: Optional[str] = None
     violation_reason: Optional[str] = None
     violation_code: Optional[str] = None
+    violation_type: Optional[str] = None
     timer_started_at: Optional[datetime] = None
     has_road_sign_photo: bool = False
 
@@ -115,6 +116,7 @@ class VerificationResponse(BaseModel):
 class SubmitViolationRequest(BaseModel):
     violation_reason: str = Field(..., min_length=1, max_length=500)
     violation_code: str = Field(..., min_length=1, max_length=50)
+    violation_type: Optional[str] = Field(None, max_length=100)
     notes: Optional[str] = None
 
 
@@ -173,8 +175,7 @@ class ExternalServiceHealthResponse(BaseModel):
 
 
 class AnalyzeParkingRequest(BaseModel):
-    latitude: float = Field(..., ge=-90, le=90)
-    longitude: float = Field(..., ge=-180, le=180)
+    violation_id: str = Field(..., min_length=1, description="Violation ID")
     zoom: int = Field(default=17, ge=0, le=19, description="Map zoom level")
     image_size: int = Field(default=512, ge=128, le=2048, description="Map image size")
 

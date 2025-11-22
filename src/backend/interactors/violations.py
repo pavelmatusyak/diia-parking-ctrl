@@ -346,6 +346,7 @@ class ViolationInteractor:
         user_id: str,
         violation_reason: str,
         violation_code: str,
+        violation_type: Optional[str] = None,
         notes: Optional[str] = None,
     ) -> dict:
         violation = await self.get_violation(violation_id, user_id)
@@ -365,7 +366,17 @@ class ViolationInteractor:
                 detail="Must have at least one photo with successful OCR detection",
             )
 
-        if not violation.has_road_sign_photo:
+        # Define violation types that require timer
+        TIMER_REQUIRED_TYPES = ["railway_crossing", "tram_track", "bridge_or_tunnel"]
+
+        # Enforce timer if violation_reason is provided and violation type requires timer
+        should_enforce_timer = (
+            violation_reason and
+            violation_type and
+            violation_type in TIMER_REQUIRED_TYPES
+        )
+
+        if should_enforce_timer and not violation.has_road_sign_photo:
             if not violation.timer_started_at:
                 raise HTTPException(
                     status_code=400,
@@ -382,6 +393,7 @@ class ViolationInteractor:
 
         violation.violation_reason = violation_reason
         violation.violation_code = violation_code
+        violation.violation_type = violation_type
         if notes:
             violation.notes = notes
         violation.submitted_at = datetime.utcnow()

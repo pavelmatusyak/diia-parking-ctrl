@@ -72,6 +72,7 @@ class Violation(Base):
     # New flow fields
     violation_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     violation_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    violation_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     timer_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     has_road_sign_photo: Mapped[bool] = mapped_column(default=False)
 
