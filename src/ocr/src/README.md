@@ -113,27 +113,51 @@ files = {'image': open('car_image.jpg', 'rb')}
 response = requests.post(url, files=files)
 print(response.json())
 ```
+## 3. Photo Check - Vehicle Motion Detection
 
-3. Photo Check
 ```bash
 POST /is_running
 ```
 
-Receives two photos (photo1 and photo2) as multipart/form-data and returns a random boolean (true or false).
+Analyzes two sequential photos to detect if a vehicle is in motion using YOLO segmentation and optical flow.
 
-Response (success):
+### Request
+
+**Content-Type:** `multipart/form-data`
+
+- `photo1` (file, required): First image with vehicle
+- `photo2` (file, required): Second image
+
+### Response
+
+**Success (200):**
 ```json
 {
-  "result": true
+  "result": true,
+  "avg_err": 23.45,
+  "loss_rate": 12.3,
+  "vehicle_detected": true,
+  "bbox": [100, 150, 300, 400]
 }
 ```
 
-Response (missing files):
+**No Vehicle (200):**
+```json
+{
+  "error": "No vehicle detected in photo1",
+  "result": false,
+  "avg_err": 0.0,
+  "loss_rate": 0.0
+}
+```
+
+**Error (400):**
 ```json
 {
   "error": "Missing photo1 or photo2"
 }
 ```
+
 
 ### Response Format
 
