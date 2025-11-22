@@ -35,68 +35,87 @@ export default function HomeScreen() {
     }, []);
 
     return (
-        <LinearGradient
-            colors={['#e0f7fa', '#d0f0e7']}
-            style={styles.container}
-        >
-            <View style={styles.tile}>
-                <View style={styles.iconWrapper}>
-                    <MaterialIcons name="local-parking" size={50} color="#fff" />
-                </View>
+        <ThemedView style={styles.container}>
+            <View style={styles.content}>
+                <MaterialIcons
+                    name="local-parking"
+                    size={140}
+                    color="#C0C0C0"
+                    style={styles.icon}
+                />
 
                 <ThemedText type="title" style={styles.title}>
                     Parking Control
                 </ThemedText>
 
-                <TouchableOpacity style={styles.button} onPress={handleCreateTicket} activeOpacity={0.85}>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleCreateTicket}
+                    activeOpacity={0.85}
+                >
                     <ThemedText style={styles.buttonText}>Створити квиток</ThemedText>
                 </TouchableOpacity>
 
-                <ThemedText style={styles.status}>{backendStatus}</ThemedText>
+                <ThemedText style={styles.statusText}>
+                    {backendStatus}
+                </ThemedText>
             </View>
         </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    tile: {
-        width: '85%',
-        backgroundColor: 'rgba(255,255,255,0.85)',
-        borderRadius: 20,
-        padding: 24,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
     },
-    iconWrapper: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#000',
+    content: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        paddingHorizontal: 40,
+    },
+    icon: {
+        marginBottom: 32,
+        opacity: 0.9,
     },
     title: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#000',
+        marginBottom: 48,
         textAlign: 'center',
-        marginBottom: 24,
+        fontSize: 36,
+        fontWeight: '800',
+        letterSpacing: -1,
+        color: '#111827',
     },
     button: {
-        width: '100%',
-        paddingVertical: 16,
-        borderRadius: 14,
-        backgroundColor: '#0BA360',
-        justifyContent: 'center',
+        width: '85%',
+        maxWidth: 400,
+        paddingVertical: 20,
+        borderRadius: 30,
         alignItems: 'center',
-        marginBottom: 16,
+        justifyContent: 'center',
+        minHeight: 64,
+        backgroundColor: '#000000',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
-    buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-    status: { color: '#000', fontSize: 16, textAlign: 'center' },
+    buttonText: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: -0.3,
+    },
+    statusText: {
+        marginTop: 24,
+        textAlign: 'center',
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#6B7280',
+        letterSpacing: -0.1,
+    },
 });
