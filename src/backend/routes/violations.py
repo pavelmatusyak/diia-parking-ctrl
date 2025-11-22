@@ -16,8 +16,10 @@ from foundation.schemas import (
     TimerStatusResponse,
     TimerStartResponse,
     PDFUrlResponse,
+    VehicleAnalysisResponse,
 )
 from interactors.violations import ViolationInteractor
+from interactors.vehicle_analysis import VehicleAnalysisInteractor
 from interactors.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -228,3 +230,60 @@ async def get_violation_status(
     if not violation:
         raise HTTPException(status_code=404, detail="Violation not found")
     return violation
+
+
+@router.post("/{violation_id}/analyze-vehicle", response_model=VehicleAnalysisResponse, status_code=status.HTTP_200_OK)
+async def analyze_vehicle_photo(
+    violation_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Analyze a vehicle photo to detect:
+    - Whether headlights are on
+    - Whether a driver is present
+
+    Uses GPT-4.1 mini vision model for analysis.
+    """
+    # Verify violation exists and belongs to user
+    violation_interactor = ViolationInteractor(db)
+    violation = await violation_interactor.get_violation(violation_id, current_user["id"])
+    if not violation:
+        raise HTTPException(status_code=404, detail="Violation not found")
+
+    # Validate file type
+    if file.filename:
+        file_extension = file.filename.split('.')[-1].lower()
+        allowed_formats = ['jpg', 'jpeg', 'png', 'webp', 'gif']
+        if file_extension not in allowed_formats:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported image format. Allowed formats: {', '.join(allowed_formats).upper()}"
+            )
+
+    # Read file data
+    try:
+        file_data = await file.read()
+    except Exception as e:
+        logger.error(f"Failed to read uploaded file: {e}")
+        raise HTTPException(status_code=400, detail="Failed to read uploaded file")
+
+    # Analyze vehicle
+    try:
+        analysis_interactor = VehicleAnalysisInteractor()
+        result = await analysis_interactor.analyze_vehicle(
+            image_data=file_data,
+            filename=file.filename,
+        )
+
+        logger.info(f"Vehicle analysis completed for violation {violation_id}: headlights={result['headlights_on']}, driver={result['driver_present']}")
+
+        return VehicleAnalysisResponse(**result)
+
+    except Exception as e:
+        logger.error(f"Vehicle analysis failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze vehicle: {str(e)}"
+        )

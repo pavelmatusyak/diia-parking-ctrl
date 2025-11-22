@@ -150,6 +150,13 @@ class PDFUrlResponse(BaseModel):
     expires_at: datetime
 
 
+class VehicleAnalysisResponse(BaseModel):
+    headlights_on: bool = Field(..., description="Whether the car headlights are on")
+    driver_present: bool = Field(..., description="Whether a driver is present in the vehicle")
+    confidence: Optional[str] = Field(None, description="Confidence level of the analysis")
+    raw_response: Optional[str] = Field(None, description="Raw response from the model")
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
