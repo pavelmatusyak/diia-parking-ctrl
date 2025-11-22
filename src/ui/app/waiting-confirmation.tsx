@@ -1,43 +1,35 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/constants/themed-view';
 import { useViolationContext } from '@/context/violation-context';
-import { getTimerStatus, uploadViolationPhoto } from '@/services/api';
+import { getTimerStatus } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function WaitingConfirmationScreen() {
     const insets = useSafeAreaInsets();
     const { reportId } = useViolationContext();
     const [timerStatus, setTimerStatus] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [takingPhoto, setTakingPhoto] = useState(false);
 
     useEffect(() => {
         if (!reportId) {
-            console.error('No reportId in waiting-confirmation');
             setLoading(false);
             setTimeout(() => router.back(), 2000);
             return;
         }
 
-        console.log('Starting timer polling for reportId:', reportId);
-
-        // Poll timer status every second
         const interval = setInterval(async () => {
             try {
                 const status = await getTimerStatus(reportId);
                 setTimerStatus(status);
                 setLoading(false);
-
-                // If timer is complete, stop polling
-                if (status.can_submit) {
-                    clearInterval(interval);
-                }
+                if (status.can_submit) clearInterval(interval);
             } catch (error) {
-                console.error('Failed to get timer status:', error);
+                console.error(error);
             }
         }, 1000);
 
@@ -50,26 +42,19 @@ export default function WaitingConfirmationScreen() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const handleTakePhoto = () => {
-        // Navigate to camera to take verification photo
-        router.push('/plate-camera');
-    };
-
-    const handleSubmit = () => {
-        // Navigate back to violation details to retry submission
-        router.push('/violation-success');
-    };
+    const handleTakePhoto = () => router.push('/plate-camera');
+    const handleSubmit = () => router.push('/violation-success');
 
     if (loading) {
         return (
-            <ThemedView style={styles.container}>
+            <LinearGradient colors={['#E0F7FA', '#D0F0E7']} style={styles.container}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#000000" />
                     <ThemedText style={styles.loadingText}>
                         Завантаження статусу таймера...
                     </ThemedText>
                 </View>
-            </ThemedView>
+            </LinearGradient>
         );
     }
 
@@ -103,11 +88,6 @@ export default function WaitingConfirmationScreen() {
                                     {formatTime(secondsRemaining)}
                                 </ThemedText>
                             </View>
-                            <ThemedText style={styles.timerDescription}>
-                                Для підтвердження порушення необхідно зачекати 5 хвилин.
-                                Це гарантує, що автомобіль все ще припаркований.
-                            </ThemedText>
-                        </View>
 
                         {/* Info Box */}
                         <View style={styles.infoBox}>
@@ -131,30 +111,23 @@ export default function WaitingConfirmationScreen() {
                             </ThemedText>
                         </View>
 
-                        {/* Take Photo Button */}
-                        <TouchableOpacity
-                            style={styles.photoButton}
-                            onPress={handleTakePhoto}
-                        >
-                            <Ionicons name="camera" size={24} color="#fff" />
-                            <ThemedText style={styles.photoButtonText}>
-                                Зробити фото підтвердження
-                            </ThemedText>
-                        </TouchableOpacity>
+                            <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
+                                <Ionicons name="camera" size={24} color="#fff" />
+                                <ThemedText style={styles.photoButtonText}>
+                                    Зробити фото
+                                </ThemedText>
+                            </TouchableOpacity>
 
-                        {/* Or Submit Button */}
-                        <TouchableOpacity
-                            style={styles.submitButton}
-                            onPress={handleSubmit}
-                        >
-                            <ThemedText style={styles.submitButtonText}>
-                                Продовжити без фото
-                            </ThemedText>
-                        </TouchableOpacity>
-                    </>
-                )}
+                            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+                                <ThemedText style={styles.submitButtonText}>
+                                    Продовжити без фото
+                                </ThemedText>
+                            </TouchableOpacity>
+                        </>
+                    )}
+                </View>
             </View>
-        </ThemedView>
+        </LinearGradient>
     );
 }
 

@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
 import { ThemedView } from '@/constants/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { authenticateAnonymous } from '@/services/api';
 
 export default function HomeScreen() {
     const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme ?? 'light'];
     const [backendStatus, setBackendStatus] = useState<string>('Перевірка...');
 
     const handleCreateTicket = () => {
@@ -25,7 +24,6 @@ export default function HomeScreen() {
                 return;
             }
             try {
-                // Step 0: Authenticate anonymously
                 await authenticateAnonymous();
                 setBackendStatus('Бекенд доступний ✅');
             } catch (err) {
@@ -62,7 +60,7 @@ export default function HomeScreen() {
                     {backendStatus}
                 </ThemedText>
             </View>
-        </ThemedView>
+        </LinearGradient>
     );
 }
 

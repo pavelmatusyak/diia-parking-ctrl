@@ -14,13 +14,16 @@ import {
     useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useColorScheme } from 'react-native';
+import { router } from 'expo-router';
+import { ThemedText } from '@/components/themed-text';
 import { useViolationContext } from '@/context/violation-context';
+import { getCurrentLocation } from '@/services/location';
 import { createViolation } from '@/services/api';
 import WebMap from '@/components/web-map';
 
 export default function MapSelectionScreen() {
     const colorScheme = useColorScheme();
-    const theme = Colors[colorScheme ?? 'light'];
     const insets = useSafeAreaInsets();
     const { setReportId } = useViolationContext();
 
@@ -62,7 +65,6 @@ export default function MapSelectionScreen() {
             Alert.alert('Помилка', 'Будь ласка, оберіть локацію на мапі');
             return;
         }
-
         setCreating(true);
         try {
             const violation = await createViolation(
@@ -83,27 +85,23 @@ export default function MapSelectionScreen() {
                 },
             });
         } catch (error: any) {
-            console.error('Failed to create violation:', error);
             Alert.alert('Помилка', error.message || 'Не вдалося створити звіт');
-        } finally {
-            setCreating(false);
-        }
+        } finally { setCreating(false); }
     };
 
     if (loading) {
         return (
-            <ThemedView style={styles.full}>
-                <ActivityIndicator size="large" color={theme.tint} />
+            <LinearGradient colors={['#F2F2F7', '#FFFFFF']} style={styles.full}>
+                <ActivityIndicator size="large" color="#007AFF" />
                 <ThemedText style={styles.loadingText}>Завантаження мапи...</ThemedText>
-            </ThemedView>
+            </LinearGradient>
         );
     }
 
     const center = selectedLocation || location;
 
     return (
-        <View style={styles.container}>
-            {/* Map takes full screen */}
+        <LinearGradient colors={['#F2F2F7', '#FFFFFF']} style={styles.container}>
             <View style={styles.mapContainer}>
                 <WebMap
                     center={center}
@@ -112,7 +110,6 @@ export default function MapSelectionScreen() {
                 />
             </View>
 
-            {/* Floating Header */}
             <View style={[styles.header, { top: insets.top + 10 }]}>
                 <TouchableOpacity
                     style={styles.iconButton}
@@ -131,7 +128,6 @@ export default function MapSelectionScreen() {
             {/* Bottom Card */}
             <View style={[styles.bottomCard, { paddingBottom: insets.bottom + 16 }]}>
                 <View style={styles.dragIndicator} />
-
                 <View style={styles.addressContainer}>
                     <View style={styles.addressIconContainer}>
                         <Ionicons name="location" size={24} color="#C0C0C0" />
@@ -164,7 +160,7 @@ export default function MapSelectionScreen() {
                     )}
                 </TouchableOpacity>
             </View>
-        </View>
+        </LinearGradient>
     );
 }
 
