@@ -177,12 +177,14 @@ async def submit_violation(
     db: AsyncSession = Depends(get_db),
 ):
     interactor = ViolationInteractor(db)
+
+    # Convert ViolationItem objects to dict
+    violations_list = [v.model_dump() for v in request.violations]
+
     result = await interactor.submit_violation(
         violation_id=violation_id,
         user_id=current_user["id"],
-        violation_reason=request.violation_reason,
-        violation_code=request.violation_code,
-        violation_type=request.violation_type,
+        violations=violations_list,
         notes=request.notes,
     )
     return result

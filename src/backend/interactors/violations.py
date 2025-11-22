@@ -223,7 +223,7 @@ class ViolationInteractor:
             "location": {
                 "latitude": violation.latitude,
                 "longitude": violation.longitude,
-                "address": violation.address,
+                "address": violation.notes or violation.address,  # Use notes as address if available
             },
             "photos": [
                 {
@@ -234,6 +234,7 @@ class ViolationInteractor:
                 }
                 for photo in photos
             ],
+            "violations": violation.violations or [],  # Include all violations
             "verification_time_seconds": violation.verification_time_seconds,
             "created_at": violation.created_at,
             "verified_at": violation.verified_at,
@@ -344,9 +345,7 @@ class ViolationInteractor:
         self,
         violation_id: str,
         user_id: str,
-        violation_reason: str,
-        violation_code: str,
-        violation_type: Optional[str] = None,
+        violations: list[dict],
         notes: Optional[str] = None,
     ) -> dict:
         violation = await self.get_violation(violation_id, user_id)
@@ -369,14 +368,15 @@ class ViolationInteractor:
         # Define violation types that require timer
         TIMER_REQUIRED_TYPES = ["railway_crossing", "tram_track", "bridge_or_tunnel"]
 
-        # Enforce timer if violation_reason is provided and violation type requires timer
-        should_enforce_timer = (
-            violation_reason and
-            violation_type and
-            violation_type in TIMER_REQUIRED_TYPES
+        # Check if ANY violation in the list requires timer
+        requires_timer = any(
+            v.get("violation_type") in TIMER_REQUIRED_TYPES
+            for v in violations
+            if v.get("violation_type")
         )
 
-        if should_enforce_timer and not violation.has_road_sign_photo:
+        # Enforce timer if any violation requires it
+        if requires_timer and not violation.has_road_sign_photo:
             if not violation.timer_started_at:
                 raise HTTPException(
                     status_code=400,
@@ -391,9 +391,16 @@ class ViolationInteractor:
                     detail="Must wait for 5-minute timer to complete before submission",
                 )
 
-        violation.violation_reason = violation_reason
-        violation.violation_code = violation_code
-        violation.violation_type = violation_type
+        # Store violations list
+        violation.violations = violations
+
+        # Also store first violation in legacy fields for backward compatibility
+        if violations:
+            first_violation = violations[0]
+            violation.violation_reason = first_violation.get("violation_reason")
+            violation.violation_code = first_violation.get("violation_code")
+            violation.violation_type = first_violation.get("violation_type")
+
         if notes:
             violation.notes = notes
         violation.submitted_at = datetime.utcnow()
