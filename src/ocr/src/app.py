@@ -22,6 +22,8 @@ from utils.yolo_detector import get_box
 from ultralytics import YOLO
 import ultralytics
 
+from utils.car_motion import run_yolov8_seg_on_frame_1, detect_car_motion_by_error
+
 app = Flask(__name__)
 
 # Configuration
@@ -54,6 +56,21 @@ yolo_model = None
 crnn_model = None
 ocr_processor = None
 device = None
+
+def make_json_serializable(obj):
+    """Convert numpy types to Python native types for JSON serialization"""
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: make_json_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [make_json_serializable(item) for item in obj]
+    else:
+        return obj
 
 
 def print_versions():
@@ -394,7 +411,7 @@ def recognize_plate_crnn():
         }), 500
 
 
-@app.route('/recognize', methods=['POST'])
+
 @app.route('/recognize_ocr', methods=['POST'])
 def recognize_plate_ocr():
     """
@@ -494,17 +511,62 @@ def file_too_large(e):
 
 @app.route("/is_running", methods=['POST'])
 def check_photos():
-    # Expect 2 files: photo1, photo2
-    if "photo1" not in request.files or "photo2" not in request.files:
-        return jsonify({"error": "Missing photo1 or photo2"}), 400
+    try:
+        # Validate request
+        if "photo1" not in request.files or "photo2" not in request.files:
+            return jsonify({"error": "Missing photo1 or photo2"}), 400
 
-    photo1 = request.files["photo1"]
-    photo2 = request.files["photo2"]
+        photo1_file = request.files["photo1"]
+        photo2_file = request.files["photo2"]
 
-    # Random True/False result
-    result = random.choice([True, False])
+        # Convert FileStorage to numpy arrays
+        photo1_bytes = np.frombuffer(photo1_file.read(), np.uint8)
+        photo1 = cv2.imdecode(photo1_bytes, cv2.IMREAD_COLOR)
 
-    return jsonify({"result": result})
+        photo2_bytes = np.frombuffer(photo2_file.read(), np.uint8)
+        photo2 = cv2.imdecode(photo2_bytes, cv2.IMREAD_COLOR)
+
+        # Validate images were decoded successfully
+        if photo1 is None or photo2 is None:
+            return jsonify({"error": "Failed to decode one or both images"}), 400
+
+        # Run YOLO segmentation on first image
+        yolo_output = run_yolov8_seg_on_frame_1(photo1)
+
+        if yolo_output is None:
+            return jsonify({
+                "error": "No vehicle detected in photo1",
+                "result": False,
+                "avg_err": 0.0,
+                "loss_rate": 0.0
+            }), 200
+
+        car_box, car_mask = yolo_output
+
+        # Detect motion
+        is_car_moving, avg_err, loss_rate = detect_car_motion_by_error(
+            photo1,
+            photo2,
+            car_mask_1=car_mask,
+            error_threshold=15.0,
+            loss_threshold_percent=18.0
+        )
+
+        response_data = {
+            "result": bool(is_car_moving),  # Convert to Python bool
+            "avg_err": float(avg_err),  # Convert to Python float
+            "loss_rate": float(loss_rate),  # Convert to Python float (fixed typo!)
+            "vehicle_detected": True,
+            "bbox": [int(x) for x in car_box]  # Convert bbox to Python ints
+        }
+
+        response_data = make_json_serializable(response_data)
+
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        print(f"Error in check_photos endpoint: {e}")
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
 if __name__ == '__main__':

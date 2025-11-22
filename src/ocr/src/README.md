@@ -115,7 +115,9 @@ print(response.json())
 ```
 
 3. Photo Check
+```bash
 POST /is_running
+```
 
 Receives two photos (photo1 and photo2) as multipart/form-data and returns a random boolean (true or false).
 
