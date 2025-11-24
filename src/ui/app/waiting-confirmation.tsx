@@ -89,13 +89,14 @@ export default function WaitingConfirmationScreen() {
                                 </ThemedText>
                             </View>
 
-                        {/* Info Box */}
-                        <View style={styles.infoBox}>
-                            <Ionicons name="information-circle" size={24} color="#6B7280" />
-                            <ThemedText style={styles.infoText}>
-                                Після завершення таймера вам потрібно буде зробити ще одне фото
-                                автомобіля для підтвердження.
-                            </ThemedText>
+                            {/* Info Box */}
+                            <View style={styles.infoBox}>
+                                <Ionicons name="information-circle" size={24} color="#6B7280" />
+                                <ThemedText style={styles.infoText}>
+                                    Після завершення таймера вам потрібно буде зробити ще одне фото
+                                    автомобіля для підтвердження.
+                                </ThemedText>
+                            </View>
                         </View>
                     </>
                 ) : (
@@ -111,23 +112,22 @@ export default function WaitingConfirmationScreen() {
                             </ThemedText>
                         </View>
 
-                            <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
-                                <Ionicons name="camera" size={24} color="#fff" />
-                                <ThemedText style={styles.photoButtonText}>
-                                    Зробити фото
-                                </ThemedText>
-                            </TouchableOpacity>
+                        <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
+                            <Ionicons name="camera" size={24} color="#fff" />
+                            <ThemedText style={styles.photoButtonText}>
+                                Зробити фото
+                            </ThemedText>
+                        </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                                <ThemedText style={styles.submitButtonText}>
-                                    Продовжити без фото
-                                </ThemedText>
-                            </TouchableOpacity>
-                        </>
-                    )}
-                </View>
+                        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+                            <ThemedText style={styles.submitButtonText}>
+                                Продовжити без фото
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </>
+                )}
             </View>
-        </LinearGradient>
+        </ThemedView>
     );
 }
 
@@ -207,15 +207,6 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         color: '#FFFFFF',
         letterSpacing: -1,
-    },
-    timerDescription: {
-        fontSize: 16,
-        textAlign: 'center',
-        color: '#6B7280',
-        lineHeight: 24,
-        paddingHorizontal: 32,
-        fontWeight: '500',
-        letterSpacing: -0.1,
     },
     infoBox: {
         flexDirection: 'row',

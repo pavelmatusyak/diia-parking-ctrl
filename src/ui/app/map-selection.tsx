@@ -14,13 +14,10 @@ import {
     useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useColorScheme } from 'react-native';
-import { router } from 'expo-router';
-import { ThemedText } from '@/components/themed-text';
 import { useViolationContext } from '@/context/violation-context';
-import { getCurrentLocation } from '@/services/location';
 import { createViolation } from '@/services/api';
 import WebMap from '@/components/web-map';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function MapSelectionScreen() {
     const colorScheme = useColorScheme();
@@ -29,7 +26,7 @@ export default function MapSelectionScreen() {
 
     const [loading, setLoading] = useState(true);
     const [location, setLocation] = useState<{ latitude: number; longitude: number }>({
-        latitude: 50.4501, // Default to Kyiv
+        latitude: 50.4501,
         longitude: 30.5234,
     });
     const [selectedLocation, setSelectedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -45,8 +42,7 @@ export default function MapSelectionScreen() {
                     setSelectedLocation({ latitude, longitude });
                     setLoading(false);
                 },
-                (error) => {
-                    console.error('Geolocation error:', error);
+                () => {
                     setLoading(false);
                 }
             );
@@ -62,10 +58,11 @@ export default function MapSelectionScreen() {
 
     const handleConfirm = async () => {
         if (!selectedLocation) {
-            Alert.alert('Помилка', 'Будь ласка, оберіть локацію на мапі');
+            Alert.alert('Помилка', 'Будь ласка, оберіть локацію');
             return;
         }
         setCreating(true);
+
         try {
             const violation = await createViolation(
                 selectedLocation.latitude,
@@ -86,7 +83,9 @@ export default function MapSelectionScreen() {
             });
         } catch (error: any) {
             Alert.alert('Помилка', error.message || 'Не вдалося створити звіт');
-        } finally { setCreating(false); }
+        } finally {
+            setCreating(false);
+        }
     };
 
     if (loading) {
@@ -106,36 +105,37 @@ export default function MapSelectionScreen() {
                 <WebMap
                     center={center}
                     onLocationChange={handleLocationChange}
-                    theme={theme}
+                    theme={colorScheme}
                 />
             </View>
 
             <View style={[styles.header, { top: insets.top + 10 }]}>
-                <TouchableOpacity
-                    style={styles.iconButton}
-                    onPress={() => router.back()}
-                >
+                <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#111827" />
                 </TouchableOpacity>
+
                 <View style={styles.titleContainer}>
                     <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
                         Локація авто
                     </ThemedText>
                 </View>
+
                 <View style={{ width: 48 }} />
             </View>
 
-            {/* Bottom Card */}
             <View style={[styles.bottomCard, { paddingBottom: insets.bottom + 16 }]}>
                 <View style={styles.dragIndicator} />
+
                 <View style={styles.addressContainer}>
                     <View style={styles.addressIconContainer}>
                         <Ionicons name="location" size={24} color="#C0C0C0" />
                     </View>
+
                     <View style={styles.addressTextContainer}>
                         <ThemedText style={styles.addressText} numberOfLines={2}>
                             {address || 'Перетягніть маркер або введіть адресу...'}
                         </ThemedText>
+
                         {selectedLocation && (
                             <ThemedText style={styles.coordsText}>
                                 {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
@@ -147,7 +147,6 @@ export default function MapSelectionScreen() {
                 <TouchableOpacity
                     style={[styles.confirmButton, creating && { opacity: 0.6 }]}
                     onPress={handleConfirm}
-                    activeOpacity={0.85}
                     disabled={creating}
                 >
                     {creating ? (
@@ -165,22 +164,9 @@ export default function MapSelectionScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F8F9FA'
-    },
-    full: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F8F9FA',
-    },
-    mapContainer: {
-        ...StyleSheet.absoluteFillObject,
-        borderRadius: 0,
-    },
-    map: { flex: 1 },
-
+    container: { flex: 1, backgroundColor: '#F8F9FA' },
+    full: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F9FA' },
+    mapContainer: { ...StyleSheet.absoluteFillObject },
     header: {
         position: 'absolute',
         left: 20,
@@ -197,11 +183,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 6,
         borderWidth: 1,
         borderColor: '#E5E7EB',
     },
@@ -212,20 +193,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 6,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
     },
-    headerTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        letterSpacing: -0.2,
-    },
-
+    headerTitle: { fontSize: 17, fontWeight: '600' },
     bottomCard: {
         position: 'absolute',
         bottom: 0,
@@ -236,11 +205,6 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 32,
         paddingHorizontal: 24,
         paddingTop: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 20,
-        elevation: 12,
         borderTopWidth: 1,
         borderTopColor: '#E5E7EB',
     },
@@ -253,12 +217,7 @@ const styles = StyleSheet.create({
         marginBottom: 24,
         opacity: 0.4,
     },
-    addressContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 24,
-        paddingHorizontal: 4,
-    },
+    addressContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
     addressIconContainer: {
         width: 52,
         height: 52,
@@ -270,23 +229,9 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E7EB',
     },
-    addressTextContainer: {
-        flex: 1,
-    },
-    addressText: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 6,
-        letterSpacing: -0.3,
-        lineHeight: 24,
-    },
-    coordsText: {
-        fontSize: 14,
-        color: '#6B7280',
-        fontWeight: '500',
-        letterSpacing: -0.1,
-    },
-
+    addressTextContainer: { flex: 1 },
+    addressText: { fontSize: 18, fontWeight: '700', marginBottom: 6 },
+    coordsText: { fontSize: 14, color: '#6B7280', fontWeight: '500' },
     confirmButton: {
         height: 60,
         borderRadius: 30,
@@ -294,25 +239,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#000000',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 8,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
     },
-    confirmButtonText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '700',
-        letterSpacing: -0.2,
-    },
-
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-        fontWeight: '500',
-        color: '#6B7280',
-    },
+    confirmButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
+    loadingText: { marginTop: 16, fontSize: 16, fontWeight: '500', color: '#6B7280' },
 });

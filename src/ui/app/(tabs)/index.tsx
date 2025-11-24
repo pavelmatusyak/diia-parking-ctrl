@@ -60,7 +60,7 @@ export default function HomeScreen() {
                     {backendStatus}
                 </ThemedText>
             </View>
-        </LinearGradient>
+        </ThemedView>
     );
 }
 
