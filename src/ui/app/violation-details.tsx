@@ -1,5 +1,14 @@
-import { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { useState, useEffect, useMemo } from 'react';
+import {
+    View,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView,
+    Alert,
+    ActivityIndicator,
+    TextInput,
+    Platform,
+} from 'react-native';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/constants/themed-view';
@@ -28,21 +37,24 @@ const VIOLATION_TYPES: Record<string, { title: string; description: string }> = 
 export default function ViolationDetailsScreen() {
     const insets = useSafeAreaInsets();
     const { reportId } = useViolationContext();
+
     const [analyzing, setAnalyzing] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [analysis, setAnalysis] = useState<any>(null);
     const [selectedViolations, setSelectedViolations] = useState<Set<string>>(new Set());
     const [notes, setNotes] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         performAnalysis();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const performAnalysis = async () => {
         if (!reportId) {
             setAnalyzing(false);
             Alert.alert('Помилка', 'Відсутній ідентифікатор порушення', [
-                { text: 'OK', onPress: () => router.back() }
+                { text: 'OK', onPress: () => router.back() },
             ]);
             return;
         }
@@ -53,22 +65,21 @@ export default function ViolationDetailsScreen() {
             const results = await Promise.race([
                 analyzeParking(reportId),
                 analyzeParking(reportId),
-                analyzeParking(reportId)
+                analyzeParking(reportId),
             ]);
 
             setAnalysis(results);
 
-            // Pre-select violations with probability > 0.5
+            // Pre-select violations with probability > 0.5 (from backend)
             const preselected = new Set<string>();
-            Object.entries(results.probabilityBreakdown).forEach(([key, prob]) => {
-                if ((prob as number) > 0.5) {
-                    preselected.add(key);
-                }
+            const breakdown = results?.probabilityBreakdown || {};
+            Object.entries(breakdown).forEach(([key, prob]) => {
+                if ((prob as number) > 0.5) preselected.add(key);
             });
             setSelectedViolations(preselected);
 
             // Show AI conclusion as alert
-            if (results.finalHumanReadableConclusion) {
+            if (results?.finalHumanReadableConclusion) {
                 Alert.alert('Аналіз паркування', results.finalHumanReadableConclusion);
             }
         } catch (error: any) {
@@ -82,11 +93,8 @@ export default function ViolationDetailsScreen() {
 
     const toggleViolation = (key: string) => {
         const newSet = new Set(selectedViolations);
-        if (newSet.has(key)) {
-            newSet.delete(key);
-        } else {
-            newSet.add(key);
-        }
+        if (newSet.has(key)) newSet.delete(key);
+        else newSet.add(key);
         setSelectedViolations(newSet);
     };
 
@@ -103,7 +111,7 @@ export default function ViolationDetailsScreen() {
 
         setSubmitting(true);
         try {
-            const violations = Array.from(selectedViolations).map(key => ({
+            const violations = Array.from(selectedViolations).map((key) => ({
                 violation_reason: key,
                 violation_code: key,
                 violation_type: key,
@@ -122,14 +130,13 @@ export default function ViolationDetailsScreen() {
 
             console.log('Submission successful:', result);
 
-            // Navigate to success/evidence screen
             router.push('/violation-success');
         } catch (error: any) {
             console.error('Submission failed:', error);
-            console.error('Error details:', error.data);
+            console.error('Error details:', error?.data);
 
             // Check if timer is required
-            if (error.status === 400 && error.data?.detail) {
+            if (error?.status === 400 && error?.data?.detail) {
                 const detail = error.data.detail;
 
                 if (detail.includes('timer') || detail.includes('5-minute') || detail.includes('sign photo')) {
@@ -145,99 +152,130 @@ export default function ViolationDetailsScreen() {
                         alert('Помилка: Не вдалося запустити таймер');
                     }
                 } else {
-                    // Other 400 error
                     console.error('Other 400 error:', detail);
                     alert(`Помилка: ${detail || 'Не вдалося відправити звіт'}`);
                 }
             } else {
-                console.error('Non-400 error:', error.message);
-                alert(`Помилка: ${error.message || 'Не вдалося відправити звіт'}`);
+                console.error('Non-400 error:', error?.message);
+                alert(`Помилка: ${error?.message || 'Не вдалося відправити звіт'}`);
             }
         } finally {
             setSubmitting(false);
         }
     };
 
+    // Беремо відсотки безпосередньо з бекенду
+    const backendBreakdown: Record<string, number> = useMemo(() => {
+        return analysis?.probabilityBreakdown || {};
+    }, [analysis]);
+
+    // Сортування і фільтрація: беремо відсотки з backendBreakdown і сортуємо за спаданням
+    const sortedFilteredViolations = useMemo(() => {
+        const arr = Object.entries(VIOLATION_TYPES).map(([key, info]) => {
+            const prob = typeof backendBreakdown[key] === 'number' ? backendBreakdown[key] : 0;
+            return { key, info, prob };
+        });
+
+        const q = searchQuery.trim().toLowerCase();
+        const filtered = q
+            ? arr.filter((item) => `${item.info.title} ${item.info.description}`.toLowerCase().includes(q))
+            : arr;
+
+        filtered.sort((a, b) => b.prob - a.prob);
+        return filtered;
+    }, [backendBreakdown, searchQuery]);
+
     if (analyzing) {
         return (
-            <ThemedView style={styles.container}>
+            <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#007AFF" />
-                    <ThemedText style={styles.loadingText}>
-                        Аналіз паркування...
-                    </ThemedText>
-                    <ThemedText style={styles.loadingSubtext}>
-                        Це може зайняти кілька секунд
-                    </ThemedText>
+                    <ThemedText style={styles.loadingText}>Аналіз паркування...</ThemedText>
+                    <ThemedText style={styles.loadingSubtext}>Це може зайняти кілька секунд</ThemedText>
                 </View>
             </ThemedView>
         );
     }
 
     return (
-        <ThemedView style={styles.container}>
+        <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
             {/* Header */}
-            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+            <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
+
                 <ThemedText type="defaultSemiBold" style={styles.headerTitle}>
-                    Деталі порушення
+                    Оберіть правопорушення
                 </ThemedText>
+
                 <View style={{ width: 44 }} />
             </View>
 
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-                <ThemedText style={styles.sectionTitle}>Оберіть типи порушень</ThemedText>
-                <ThemedText style={styles.sectionSubtitle}>
-                    Типи з ймовірністю {'>'} 50% вже обрані
-                </ThemedText>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                {/* Info box */}
+                <View style={styles.infoBox}>
+                    <Ionicons name="information-circle" size={18} color="#000" />
+                    <ThemedText style={styles.infoText}>
+                        Виберіть усі підходящі правопорушення для вашого випадку
+                    </ThemedText>
+                </View>
 
-                {/* Violation Types */}
-                {Object.entries(VIOLATION_TYPES).map(([key, info]) => {
-                    const probability = analysis?.probabilityBreakdown?.[key] || 0;
-                    const isSelected = selectedViolations.has(key);
+                {/* Search */}
+                <View style={styles.searchRow}>
+                    <View style={styles.searchBox}>
+                        <Ionicons name="search" size={18} color="#697386" style={{ marginRight: 8 }} />
+                        <TextInput
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholder="Пошук правопорушення"
+                            placeholderTextColor="#697386"
+                            style={styles.searchInput}
+                            returnKeyType="search"
+                            underlineColorAndroid="transparent"
+                        />
+                    </View>
+                </View>
 
-                    return (
-                        <TouchableOpacity
-                            key={key}
-                            style={[
-                                styles.violationCard,
-                                isSelected && styles.violationCardSelected
-                            ]}
-                            onPress={() => toggleViolation(key)}
-                        >
-                            <View style={styles.violationHeader}>
-                                <View style={styles.violationInfo}>
-                                    <ThemedText style={styles.violationTitle}>
-                                        {info.title}
-                                    </ThemedText>
-                                    <ThemedText style={styles.violationDescription}>
-                                        {info.description}
-                                    </ThemedText>
+                <ThemedText style={styles.selectedCount}>Обрано порушень: {selectedViolations.size}</ThemedText>
+
+                {/* Violations list (відсотки з бекенду, сортування за спаданням) */}
+                <View style={{ marginTop: 8 }}>
+                    {sortedFilteredViolations.map(({ key, info, prob }, index) => {
+                        const isSelected = selectedViolations.has(key);
+                        const percent = Math.round((prob || 0) * 100);
+
+                        const isTop = index === 0 && sortedFilteredViolations.length > 0 && (sortedFilteredViolations[0].prob || 0) > 0;
+
+                        return (
+                            <TouchableOpacity
+                                key={key}
+                                style={[styles.violationRow, isSelected && styles.violationRowSelected, isTop && styles.violationRowTop]}
+                                onPress={() => toggleViolation(key)}
+                                activeOpacity={0.85}
+                            >
+                                <View style={styles.checkboxWrapper}>
+                                    <Ionicons name={isSelected ? 'checkbox' : 'square-outline'} size={26} color={isSelected ? '#000' : '#697386'} />
                                 </View>
-                                <View style={styles.violationRight}>
-                                    {probability > 0 && (
-                                        <View style={styles.probabilityBadge}>
-                                            <ThemedText style={styles.probabilityText}>
-                                                {Math.round(probability * 100)}%
-                                            </ThemedText>
-                                        </View>
-                                    )}
-                                    <Ionicons
-                                        name={isSelected ? 'checkbox' : 'square-outline'}
-                                        size={24}
-                                        color={isSelected ? '#007AFF' : '#C7C7CC'}
-                                    />
+
+                                <View style={styles.violationTextWrap}>
+                                    <ThemedText style={styles.violationTitle}>{info.title}</ThemedText>
+                                    <ThemedText style={styles.violationDescription}>{info.description}</ThemedText>
                                 </View>
-                            </View>
-                        </TouchableOpacity>
-                    );
-                })}
+
+                                <View style={styles.probWrap}>
+                                    <View style={[styles.probBadge, isTop && styles.probBadgeTop]}>
+                                        <ThemedText style={[styles.probText, isTop && styles.probTextTop]}>{percent}%</ThemedText>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
 
                 {/* Notes */}
                 <View style={styles.notesSection}>
-                    <ThemedText style={styles.sectionTitle}>Додаткові примітки (опціонально)</ThemedText>
+                    <ThemedText style={styles.notesTitle}>Додаткові примітки (опціонально)</ThemedText>
                     <TextInput
                         style={styles.notesInput}
                         placeholder="Додайте будь-які деталі про порушення..."
@@ -251,20 +289,10 @@ export default function ViolationDetailsScreen() {
                 </View>
             </ScrollView>
 
-            {/* Submit Button */}
-            <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-                <TouchableOpacity
-                    style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-                    onPress={handleSubmit}
-                    disabled={submitting}
-                >
-                    {submitting ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <ThemedText style={styles.submitButtonText}>
-                            Відправити звіт
-                        </ThemedText>
-                    )}
+            {/* Footer / Button */}
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+                <TouchableOpacity style={[styles.nextButton, submitting && styles.nextButtonDisabled]} onPress={handleSubmit} disabled={submitting} activeOpacity={0.85}>
+                    {submitting ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.nextButtonText}>Далі</ThemedText>}
                 </TouchableOpacity>
             </View>
         </ThemedView>
@@ -272,44 +300,104 @@ export default function ViolationDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: { flex: 1, backgroundColor: '#E2ECF4' },
+
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
     loadingText: { fontSize: 18, fontWeight: '600', color: '#000' },
     loadingSubtext: { marginTop: 8, fontSize: 14, color: '#333', opacity: 0.6 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
+
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingBottom: 8,
+        height: Platform.OS === 'ios' ? 68 : 64,
+    },
     backButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 18, color: '#000' },
-    scrollView: { flex: 1 },
-    content: { padding: 20 },
-    sectionTitle: { fontSize: 18, fontWeight: '600', color: '#000', marginBottom: 8 },
-    sectionSubtitle: { fontSize: 14, color: '#333', opacity: 0.6, marginBottom: 16 },
-    violationCard: {
+    headerTitle: { fontSize: 22, fontWeight: '600', color: '#000' },
+
+    content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 48 },
+
+    infoBox: {
+        backgroundColor: '#0075FB29',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        marginTop: 6,
+    },
+    infoText: { marginLeft: 8, fontSize: 14, color: '#000' },
+
+    searchRow: { marginTop: 16 },
+    searchBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+    searchInput: { flex: 1, fontSize: 16, color: '#000' },
+
+    selectedCount: { marginTop: 12, marginBottom: 8, fontSize: 14, color: '#000' },
+
+    violationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: '#E5E5EA',
+    },
+    violationRowSelected: { borderColor: '#000' },
+    violationRowTop: {
+        borderWidth: 2,
+        borderColor: '#000',
         shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 2 }
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 4 },
     },
-    violationCardSelected: {
-        borderColor: '#007AFF',
-        backgroundColor: '#E3F2FD'
-    },
-    violationHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    violationInfo: { flex: 1, marginRight: 12 },
+    checkboxWrapper: { width: 42, alignItems: 'center', justifyContent: 'center' },
+    violationTextWrap: { flex: 1 },
     violationTitle: { fontSize: 16, fontWeight: '600', color: '#000' },
-    violationDescription: { fontSize: 14, color: '#333', opacity: 0.8 },
-    violationRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    probabilityBadge: { backgroundColor: '#007AFF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-    probabilityText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-    notesSection: { marginTop: 24 },
-    notesInput: { backgroundColor: '#F5F5F5', borderRadius: 12, padding: 16, fontSize: 16, color: '#000', minHeight: 100, marginTop: 8 },
-    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#E5E5EA' },
-    submitButton: { backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
-    submitButtonDisabled: { opacity: 0.5 },
-    submitButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+    violationDescription: { fontSize: 13, color: '#333', marginTop: 4 },
+
+    probWrap: { marginLeft: 12, alignItems: 'flex-end' },
+    probBadge: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#E5E5EA',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 12,
+        minWidth: 56,
+        alignItems: 'center',
+    },
+    probText: { fontSize: 14, fontWeight: '600', color: '#000' },
+
+    probBadgeTop: { backgroundColor: '#000', borderColor: '#000' },
+    probTextTop: { color: '#fff' },
+
+    notesSection: { marginTop: 18, marginBottom: 8 },
+    notesTitle: { fontSize: 16, fontWeight: '600', color: '#000', marginBottom: 8 },
+    notesInput: {
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        padding: 12,
+        fontSize: 15,
+        color: '#000',
+        minHeight: 92,
+        borderWidth: 1,
+        borderColor: '#E5E5EA',
+    },
+
+    footer: { paddingHorizontal: 16, backgroundColor: 'transparent' },
+    nextButton: { backgroundColor: '#000', paddingVertical: 16, borderRadius: 50, alignItems: 'center', justifyContent: 'center' },
+    nextButtonDisabled: { opacity: 0.6 },
+    nextButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
 });

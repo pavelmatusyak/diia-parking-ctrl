@@ -5,12 +5,15 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router } from 'expo-router';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
+import { Camera } from 'expo-camera';
 import { authenticateAnonymous } from '@/services/api';
 
 export default function HomeScreen() {
     const colorScheme = useColorScheme();
     const [backendStatus, setBackendStatus] = useState<string>('Перевірка...');
+    const [locationPermission, setLocationPermission] = useState<string>('Перевірка...');
+    const [cameraPermission, setCameraPermission] = useState<string>('Перевірка...');
 
     const handleCreateTicket = () => {
         router.push('/map-selection');
@@ -18,19 +21,29 @@ export default function HomeScreen() {
 
     useEffect(() => {
         const initializeApp = async () => {
+            // Перевірка бекенду
             const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
             if (!backendUrl) {
                 setBackendStatus('Бекенд не налаштовано ❌');
-                return;
+            } else {
+                try {
+                    await authenticateAnonymous();
+                    setBackendStatus('Бекенд доступний ✅');
+                } catch (err) {
+                    setBackendStatus('Помилка підключення до бекенду ❌');
+                    console.error('Помилка підключення до бекенду:', err);
+                }
             }
-            try {
-                await authenticateAnonymous();
-                setBackendStatus('Бекенд доступний ✅');
-            } catch (err) {
-                setBackendStatus('Помилка підключення до бекенду ❌');
-                console.error('Помилка підключення до бекенду:', err);
-            }
+
+            // Перевірка геолокації
+            const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+            setLocationPermission(locStatus === 'granted' ? 'Геолокація дозволена ✅' : 'Геолокація заборонена ❌');
+
+            // Перевірка камери
+            const { status: camStatus } = await Camera.requestCameraPermissionsAsync();
+            setCameraPermission(camStatus === 'granted' ? 'Камера дозволена ✅' : 'Камера заборонена ❌');
         };
+
         initializeApp();
     }, []);
 
@@ -58,6 +71,12 @@ export default function HomeScreen() {
 
                 <ThemedText style={styles.statusText}>
                     {backendStatus}
+                </ThemedText>
+                <ThemedText style={styles.statusText}>
+                    {locationPermission}
+                </ThemedText>
+                <ThemedText style={styles.statusText}>
+                    {cameraPermission}
                 </ThemedText>
             </View>
         </ThemedView>
@@ -111,7 +130,7 @@ const styles = StyleSheet.create({
         letterSpacing: -0.3,
     },
     statusText: {
-        marginTop: 24,
+        marginTop: 12,
         textAlign: 'center',
         fontSize: 16,
         fontWeight: '500',
