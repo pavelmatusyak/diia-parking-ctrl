@@ -13,11 +13,10 @@ import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/constants/themed-view';
 import { useViolationContext } from '@/context/violation-context';
-import { analyzeParking, submitViolation } from '@/services/api';
+import { analyzeParking, submitViolation, startTimer } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Violation type mappings
 const VIOLATION_TYPES: Record<string, { title: string; description: string }> = {
     railway_crossing: { title: 'Залізничний переїзд', description: 'Паркування на залізничному переїзді' },
     tram_track: { title: 'Трамвайна колія', description: 'Паркування на трамвайних коліях' },
@@ -47,7 +46,6 @@ export default function ViolationDetailsScreen() {
 
     useEffect(() => {
         performAnalysis();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const performAnalysis = async () => {
@@ -61,7 +59,6 @@ export default function ViolationDetailsScreen() {
 
         setAnalyzing(true);
         try {
-            // Make 3 parallel requests and use the first successful one
             const results = await Promise.race([
                 analyzeParking(reportId),
                 analyzeParking(reportId),
@@ -70,7 +67,6 @@ export default function ViolationDetailsScreen() {
 
             setAnalysis(results);
 
-            // Pre-select violations with probability > 0.5 (from backend)
             const preselected = new Set<string>();
             const breakdown = results?.probabilityBreakdown || {};
             Object.entries(breakdown).forEach(([key, prob]) => {
@@ -78,13 +74,11 @@ export default function ViolationDetailsScreen() {
             });
             setSelectedViolations(preselected);
 
-            // Show AI conclusion as alert
             if (results?.finalHumanReadableConclusion) {
                 Alert.alert('Аналіз паркування', results.finalHumanReadableConclusion);
             }
         } catch (error: any) {
-            console.error('Analysis failed:', error);
-            Alert.alert('Помилка', 'Не вдалося проаналізувати паркування. Спробуйте ще раз.');
+            Alert.alert('Помилка', 'Не вдалося проаналізувати паркування');
             router.back();
         } finally {
             setAnalyzing(false);
@@ -109,6 +103,24 @@ export default function ViolationDetailsScreen() {
             return;
         }
 
+        // 🔥 ЄДИНА ЗМІНА ТУТ:
+        const needsTimer =
+            selectedViolations.has('pedestrian_zone') ||
+            selectedViolations.has('bus_stop_30m');
+
+        if (needsTimer) {
+            console.log("Timer triggered by violation selection");
+            try {
+                await startTimer(reportId);
+                router.push('/waiting-confirmation');
+                return;
+            } catch (err) {
+                alert("Помилка запуску таймера");
+                return;
+            }
+        }
+        // 🔥 КІНЕЦЬ ЄДИНОЇ ЗМІНИ
+
         setSubmitting(true);
         try {
             const violations = Array.from(selectedViolations).map((key) => ({
@@ -122,54 +134,19 @@ export default function ViolationDetailsScreen() {
                 notes: notes || undefined,
             };
 
-            console.log('Submitting violations:', violations);
-            console.log('Full payload:', JSON.stringify(payload, null, 2));
-            console.log('Notes:', notes);
-
-            const result = await submitViolation(reportId, payload);
-
-            console.log('Submission successful:', result);
-
+            await submitViolation(reportId, payload);
             router.push('/violation-success');
         } catch (error: any) {
-            console.error('Submission failed:', error);
-            console.error('Error details:', error?.data);
-
-            // Check if timer is required
-            if (error?.status === 400 && error?.data?.detail) {
-                const detail = error.data.detail;
-
-                if (detail.includes('timer') || detail.includes('5-minute') || detail.includes('sign photo')) {
-                    // Timer is required - start it automatically
-                    console.log('Timer required, starting timer...');
-                    try {
-                        const { startTimer } = await import('@/services/api');
-                        await startTimer(reportId);
-                        console.log('Timer started successfully');
-                        router.push('/waiting-confirmation');
-                    } catch (err) {
-                        console.error('Failed to start timer:', err);
-                        alert('Помилка: Не вдалося запустити таймер');
-                    }
-                } else {
-                    console.error('Other 400 error:', detail);
-                    alert(`Помилка: ${detail || 'Не вдалося відправити звіт'}`);
-                }
-            } else {
-                console.error('Non-400 error:', error?.message);
-                alert(`Помилка: ${error?.message || 'Не вдалося відправити звіт'}`);
-            }
+            alert("Помилка відправки звіту");
         } finally {
             setSubmitting(false);
         }
     };
 
-    // Беремо відсотки безпосередньо з бекенду
     const backendBreakdown: Record<string, number> = useMemo(() => {
         return analysis?.probabilityBreakdown || {};
     }, [analysis]);
 
-    // Сортування і фільтрація: беремо відсотки з backendBreakdown і сортуємо за спаданням
     const sortedFilteredViolations = useMemo(() => {
         const arr = Object.entries(VIOLATION_TYPES).map(([key, info]) => {
             const prob = typeof backendBreakdown[key] === 'number' ? backendBreakdown[key] : 0;
@@ -199,7 +176,6 @@ export default function ViolationDetailsScreen() {
 
     return (
         <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
@@ -213,7 +189,6 @@ export default function ViolationDetailsScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Info box */}
                 <View style={styles.infoBox}>
                     <Ionicons name="information-circle" size={18} color="#000" />
                     <ThemedText style={styles.infoText}>
@@ -221,7 +196,6 @@ export default function ViolationDetailsScreen() {
                     </ThemedText>
                 </View>
 
-                {/* Search */}
                 <View style={styles.searchRow}>
                     <View style={styles.searchBox}>
                         <Ionicons name="search" size={18} color="#697386" style={{ marginRight: 8 }} />
@@ -231,31 +205,41 @@ export default function ViolationDetailsScreen() {
                             placeholder="Пошук правопорушення"
                             placeholderTextColor="#697386"
                             style={styles.searchInput}
-                            returnKeyType="search"
-                            underlineColorAndroid="transparent"
                         />
                     </View>
                 </View>
 
-                <ThemedText style={styles.selectedCount}>Обрано порушень: {selectedViolations.size}</ThemedText>
+                <ThemedText style={styles.selectedCount}>
+                    Обрано порушень: {selectedViolations.size}
+                </ThemedText>
 
-                {/* Violations list (відсотки з бекенду, сортування за спаданням) */}
                 <View style={{ marginTop: 8 }}>
                     {sortedFilteredViolations.map(({ key, info, prob }, index) => {
                         const isSelected = selectedViolations.has(key);
                         const percent = Math.round((prob || 0) * 100);
 
-                        const isTop = index === 0 && sortedFilteredViolations.length > 0 && (sortedFilteredViolations[0].prob || 0) > 0;
+                        const isTop =
+                            index === 0 &&
+                            sortedFilteredViolations.length > 0 &&
+                            (sortedFilteredViolations[0].prob || 0) > 0;
 
                         return (
                             <TouchableOpacity
                                 key={key}
-                                style={[styles.violationRow, isSelected && styles.violationRowSelected, isTop && styles.violationRowTop]}
+                                style={[
+                                    styles.violationRow,
+                                    isSelected && styles.violationRowSelected,
+                                    isTop && styles.violationRowTop,
+                                ]}
                                 onPress={() => toggleViolation(key)}
                                 activeOpacity={0.85}
                             >
                                 <View style={styles.checkboxWrapper}>
-                                    <Ionicons name={isSelected ? 'checkbox' : 'square-outline'} size={26} color={isSelected ? '#000' : '#697386'} />
+                                    <Ionicons
+                                        name={isSelected ? 'checkbox' : 'square-outline'}
+                                        size={26}
+                                        color={isSelected ? '#000' : '#697386'}
+                                    />
                                 </View>
 
                                 <View style={styles.violationTextWrap}>
@@ -265,7 +249,11 @@ export default function ViolationDetailsScreen() {
 
                                 <View style={styles.probWrap}>
                                     <View style={[styles.probBadge, isTop && styles.probBadgeTop]}>
-                                        <ThemedText style={[styles.probText, isTop && styles.probTextTop]}>{percent}%</ThemedText>
+                                        <ThemedText
+                                            style={[styles.probText, isTop && styles.probTextTop]}
+                                        >
+                                            {percent}%
+                                        </ThemedText>
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -273,7 +261,6 @@ export default function ViolationDetailsScreen() {
                     })}
                 </View>
 
-                {/* Notes */}
                 <View style={styles.notesSection}>
                     <ThemedText style={styles.notesTitle}>Додаткові примітки (опціонально)</ThemedText>
                     <TextInput
@@ -289,10 +276,18 @@ export default function ViolationDetailsScreen() {
                 </View>
             </ScrollView>
 
-            {/* Footer / Button */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-                <TouchableOpacity style={[styles.nextButton, submitting && styles.nextButtonDisabled]} onPress={handleSubmit} disabled={submitting} activeOpacity={0.85}>
-                    {submitting ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.nextButtonText}>Далі</ThemedText>}
+                <TouchableOpacity
+                    style={[styles.nextButton, submitting && styles.nextButtonDisabled]}
+                    onPress={handleSubmit}
+                    disabled={submitting}
+                    activeOpacity={0.85}
+                >
+                    {submitting ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <ThemedText style={styles.nextButtonText}>Далі</ThemedText>
+                    )}
                 </TouchableOpacity>
             </View>
         </ThemedView>

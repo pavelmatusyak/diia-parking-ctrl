@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     photoCard: { width: '48%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(245,245,245,0.7)' },
     photoImage: { width: '100%', height: '100%' },
     photoLabel: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.5)', padding: 6 },
-    photoLabelText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+    photoLabelText: { color: '#000', fontSize: 12, fontWeight: '600' },
     addButtonsContainer: { marginTop: 8 },
     addTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
     addButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(245,245,245,0.7)', borderRadius: 14, padding: 14, marginBottom: 12 },

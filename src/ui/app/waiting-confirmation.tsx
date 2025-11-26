@@ -42,7 +42,7 @@ export default function WaitingConfirmationScreen() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const handleTakePhoto = () => router.push('/plate-camera');
+    const handleTakePhoto = () => router.push('/plate-retake');
     const handleSubmit = () => router.push('/violation-success');
 
     if (loading) {

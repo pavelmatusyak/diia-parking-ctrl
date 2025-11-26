@@ -201,7 +201,7 @@ export default function MapSelectionScreen() {
                             )}
                         />
                         <TouchableOpacity style={styles.modalClose} onPress={() => setCityModalVisible(false)}>
-                            <ThemedText style={{ color: 'white', fontWeight: '700' }}>Закрити</ThemedText>
+                            <ThemedText style={{ color: 'black', fontWeight: '700' }}>Закрити</ThemedText>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
         maxHeight: '70%',
     },
     modalItem: { paddingVertical: 12 },
-    modalItemText: { fontSize: 18 },
+    modalItemText: { fontSize: 18, color:"#000" },
     modalClose: {
         marginTop: 16,
         backgroundColor: '#000',
