@@ -1,18 +1,33 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+    View,
+    StyleSheet,
+    ScrollView,
+    Image,
+    ActivityIndicator,
+    TouchableOpacity,
+    Linking,
+    Platform
+} from 'react-native';
 import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/constants/themed-view';
 import { useViolationContext } from '@/context/violation-context';
-import { getEvidence, type EvidenceResponse } from '@/services/api';
+import {
+    getEvidence,
+    getViolationPdf,
+    type EvidenceResponse
+} from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ViolationSuccessScreen() {
     const insets = useSafeAreaInsets();
     const { reportId } = useViolationContext();
+
     const [loading, setLoading] = useState(true);
     const [evidence, setEvidence] = useState<EvidenceResponse | null>(null);
+    const [pdfLoading, setPdfLoading] = useState(false);
 
     useEffect(() => {
         loadEvidence();
@@ -23,7 +38,6 @@ export default function ViolationSuccessScreen() {
             setLoading(false);
             return;
         }
-
         try {
             const data = await getEvidence(reportId);
             setEvidence(data);
@@ -34,15 +48,36 @@ export default function ViolationSuccessScreen() {
         }
     };
 
-    const handleDone = () => {
-        router.replace('/(tabs)');
+    const openPdf = async () => {
+        if (!reportId) return alert('Невірний ID порушення');
+        try {
+            setPdfLoading(true);
+            const data = await getViolationPdf(reportId);
+            if (!data?.pdf_url) return alert('PDF ще не готовий або відсутній');
+            const url = data.pdf_url;
+
+            if (Platform.OS === 'web') {
+                window.open(url, '_blank');
+                return;
+            }
+            const supported = await Linking.canOpenURL(url);
+            if (supported) await Linking.openURL(url);
+            else alert('Не вдалося відкрити PDF');
+        } catch (error: any) {
+            console.log('PDF load error:', error);
+            alert('Помилка при завантаженні PDF: ' + (error?.data?.detail || error.message));
+        } finally {
+            setPdfLoading(false);
+        }
     };
+
+    const handleDone = () => router.replace('/(tabs)');
 
     if (loading) {
         return (
-            <ThemedView style={styles.container}>
+            <ThemedView style={[styles.container, { backgroundColor: '#E2ECF4' }]}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#34C759" />
+                    <ActivityIndicator size="large" color="#000" />
                     <ThemedText style={styles.loadingText}>Завантаження...</ThemedText>
                 </View>
             </ThemedView>
@@ -50,60 +85,64 @@ export default function ViolationSuccessScreen() {
     }
 
     return (
-        <ThemedView style={styles.container}>
-            {/* Success Header */}
+        <ThemedView style={[styles.container, { backgroundColor: '#E2ECF4' }]}>
+            {/* HEADER */}
             <View style={[styles.successHeader, { paddingTop: insets.top + 20 }]}>
-                <View style={styles.successIconContainer}>
-                    <Ionicons name="checkmark-circle" size={80} color="#34C759" />
+                <View style={styles.headerRow}>
+                    <Ionicons name="arrow-back" size={24} color="#000" onPress={() => router.back()} />
+                    <ThemedText style={styles.successTitle}>Порушення успішно зафіксовано!</ThemedText>
                 </View>
-                <ThemedText style={styles.successTitle}>Порушення успішно зафіксовано!</ThemedText>
-                <ThemedText style={styles.successSubtitle}>
-                    Ваша заявка відправлена до поліції
-                </ThemedText>
             </View>
 
+            {/* CONTENT */}
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
                 {evidence && (
                     <>
                         {/* License Plate */}
-                        <View style={styles.section}>
-                            <ThemedText style={styles.sectionTitle}>Номерний знак</ThemedText>
+                        <View style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <Ionicons name="car" size={20} color="#E2ECF4" />
+                                <ThemedText style={styles.cardTitle}>Номерний знак</ThemedText>
+                            </View>
                             <View style={styles.plateContainer}>
                                 <ThemedText style={styles.plateText}>{evidence.license_plate}</ThemedText>
                             </View>
                         </View>
 
                         {/* Location */}
-                        <View style={styles.section}>
-                            <ThemedText style={styles.sectionTitle}>Місце порушення</ThemedText>
+                        <View style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <Ionicons name="location" size={20} color="#E2ECF4" />
+                                <ThemedText style={styles.cardTitle}>Місце порушення</ThemedText>
+                            </View>
                             <View style={styles.infoCard}>
-                                <Ionicons name="location" size={20} color="#007AFF" />
                                 <ThemedText style={styles.infoText}>
-                                    {evidence.location.address || `${evidence.location.latitude.toFixed(6)}, ${evidence.location.longitude.toFixed(6)}`}
+                                    {evidence.location.address ||
+                                        `${evidence.location.latitude.toFixed(6)}, ${evidence.location.longitude.toFixed(6)}`}
                                 </ThemedText>
                             </View>
                         </View>
 
                         {/* Photos */}
                         {evidence.photos.length > 0 && (
-                            <View style={styles.section}>
-                                <ThemedText style={styles.sectionTitle}>Фотографії ({evidence.photos.length})</ThemedText>
+                            <View style={styles.card}>
+                                <View style={styles.cardHeader}>
+                                    <Ionicons name="images" size={20} color="#E2ECF4" />
+                                    <ThemedText style={styles.cardTitle}>
+                                        Фотографії ({evidence.photos.length})
+                                    </ThemedText>
+                                </View>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
                                     {evidence.photos.map((photo) => {
-                                        // Ensure URL is absolute
                                         const photoUrl = photo.url.startsWith('http')
                                             ? photo.url
                                             : `${process.env.EXPO_PUBLIC_BACKEND_URL?.replace('/api/v1', '')}${photo.url}`;
-
-                                        console.log('Photo URL:', photoUrl);
-
                                         return (
                                             <Image
                                                 key={photo.id}
                                                 source={{ uri: photoUrl }}
                                                 style={styles.photoThumbnail}
                                                 resizeMode="cover"
-                                                onError={(e) => console.error('Image load error:', e.nativeEvent.error)}
                                             />
                                         );
                                     })}
@@ -111,25 +150,25 @@ export default function ViolationSuccessScreen() {
                             </View>
                         )}
 
-                        {/* Violations */}
-                        {evidence.violations.length > 0 && (
-                            <View style={styles.section}>
-                                <ThemedText style={styles.sectionTitle}>Типи порушень</ThemedText>
-                                {evidence.violations.map((violation, index) => (
-                                    <View key={index} style={styles.violationItem}>
-                                        <Ionicons name="alert-circle" size={20} color="#FF3B30" />
-                                        <ThemedText style={styles.violationText}>
-                                            {violation.violation_reason}
-                                        </ThemedText>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
+                        {/* PDF BUTTON */}
+                        <TouchableOpacity
+                            style={styles.pdfButton}
+                            onPress={openPdf}
+                            disabled={pdfLoading}
+                        >
+                            {pdfLoading ? (
+                                <ActivityIndicator color="#000" />
+                            ) : (
+                                <ThemedText style={styles.pdfButtonText}>
+                                    Переглянути PDF протокол
+                                </ThemedText>
+                            )}
+                        </TouchableOpacity>
                     </>
                 )}
             </ScrollView>
 
-            {/* Done Button */}
+            {/* FOOTER */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
                 <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
                     <ThemedText style={styles.doneButtonText}>Готово</ThemedText>
@@ -140,55 +179,65 @@ export default function ViolationSuccessScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: { flex: 1 },
+
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { marginTop: 16, fontSize: 16, color: '#000' },
+
     successHeader: {
-        alignItems: 'center',
         paddingHorizontal: 20,
-        paddingBottom: 30,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5EA',
-        backgroundColor: '#fff',
+        paddingBottom: 16,
+        backgroundColor: 'transparent'
     },
-    successIconContainer: { marginBottom: 16 },
-    successTitle: { fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 8, color: '#000' },
-    successSubtitle: { fontSize: 16, textAlign: 'center', color: '#333', opacity: 0.7 },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12
+    },
+    successTitle: { fontSize: 20, fontWeight: '700', color: '#000', flex: 1 },
+
     scrollView: { flex: 1 },
-    content: { padding: 20 },
-    section: { marginBottom: 24 },
-    sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12, color: '#000' },
+    content: { padding: 20, paddingBottom: 40 },
+
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 20
+    },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+    cardTitle: { fontSize: 16, fontWeight: '600', color: '#000' },
+
     plateContainer: {
         backgroundColor: '#FFD700',
         borderRadius: 8,
         padding: 16,
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: '#000',
+        borderColor: '#000'
     },
     plateText: { fontSize: 32, fontWeight: '700', color: '#000', letterSpacing: 4 },
+
     infoCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
         backgroundColor: '#F5F5F5',
         borderRadius: 12,
-        padding: 16,
-        gap: 12,
+        padding: 12
     },
-    infoText: { flex: 1, fontSize: 16, color: '#000' },
+    infoText: { fontSize: 16, color: '#000' },
+
     photosScroll: { marginTop: 8 },
     photoThumbnail: { width: 120, height: 120, borderRadius: 12, marginRight: 12, backgroundColor: '#F5F5F5' },
-    violationItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFF3F3',
+
+    pdfButton: {
+        backgroundColor: '#000',
+        paddingVertical: 14,
         borderRadius: 12,
-        padding: 16,
-        marginBottom: 8,
-        gap: 12,
+        alignItems: 'center',
+        marginBottom: 12
     },
-    violationText: { flex: 1, fontSize: 16, fontWeight: '500', color: '#000' },
-    footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#E5E5EA', backgroundColor: '#fff' },
-    doneButton: { backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
-    doneButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+    pdfButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+    footer: { padding: 20 },
+    doneButton: { backgroundColor: '#000', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+    doneButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' }
 });

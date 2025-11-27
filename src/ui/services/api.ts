@@ -1,17 +1,23 @@
-import { clearAuthToken, getAuthToken, setAuthToken } from './auth';
+﻿import { clearAuthToken, getAuthToken, setAuthToken } from './auth';
 
-let BASE_URL: string = process.env.EXPO_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? '';
-if (BASE_URL.includes('/api/docs')) BASE_URL = BASE_URL.replace(/\/api\/docs\/?$/, '');
+// -------------------------
+// Базова URL змінна з .env
+// -------------------------
+const BASE_URL: string = process.env.EXPO_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ?? '';
 const API_BASE = BASE_URL ? `${BASE_URL}/api/v1` : '';
 
-// Endpoints
+// -------------------------
+// Endpoint’и
+// -------------------------
 const AUTH_ENDPOINT = `${API_BASE}/auth/anonymous`;
 const VIOLATIONS_ENDPOINT = `${API_BASE}/violations`;
 const PARKING_ANALYSIS_ENDPOINT = `${API_BASE}/parking-analysis/analyze`;
 
 const DEFAULT_HEADERS = { Accept: 'application/json' };
 
-// Types
+// -------------------------
+// Типи
+// -------------------------
 export type AuthResponse = {
     access_token: string;
     token_type: string;
@@ -79,7 +85,7 @@ export type SubmitResponse = {
     status: string;
     submitted_at: string;
     pdf_url?: string;
-    detail?: string; // For 400 errors
+    detail?: string;
 };
 
 export type TimerStartResponse = {
@@ -104,7 +110,14 @@ export type EvidenceResponse = {
     created_at: string;
 };
 
-// Helper functions
+export type PdfResponse = {
+    pdf_url: string;
+    expires_at: string;
+};
+
+// -------------------------
+// Хелпери
+// -------------------------
 async function getAuthHeaders(): Promise<Record<string, string>> {
     const token = await getAuthToken();
     const headers: Record<string, string> = { ...DEFAULT_HEADERS };
@@ -125,7 +138,6 @@ async function fetchJson(url: string, options: RequestInit) {
         const data = await response.json();
 
         if (!response.ok) {
-            // Pass the error data structure for handling (e.g. timer requirement)
             throw { status: response.status, data };
         }
 
@@ -136,8 +148,9 @@ async function fetchJson(url: string, options: RequestInit) {
     }
 }
 
+// -------------------------
 // API Methods
-
+// -------------------------
 export async function authenticateAnonymous(): Promise<AuthResponse> {
     const response = await fetch(AUTH_ENDPOINT, {
         method: 'POST',
@@ -173,24 +186,15 @@ export async function uploadViolationPhoto(
     type: 'initial' | 'context' = 'initial'
 ): Promise<PhotoResponse> {
     const headers = await getAuthHeaders();
-    // Remove Content-Type to let browser/native set it with boundary
     delete headers['Content-Type'];
 
     const formData = new FormData();
 
-    // Handle web vs native differently
-    if (typeof window !== 'undefined' && photoUri.startsWith('data:')) {
-        // Web: Convert data URL to Blob
-        const response = await fetch(photoUri);
-        const blob = await response.blob();
-        formData.append('file', blob, 'photo.jpg');
-    } else if (typeof window !== 'undefined' && photoUri.startsWith('blob:')) {
-        // Web: Blob URL
+    if (typeof window !== 'undefined' && (photoUri.startsWith('data:') || photoUri.startsWith('blob:'))) {
         const response = await fetch(photoUri);
         const blob = await response.blob();
         formData.append('file', blob, 'photo.jpg');
     } else {
-        // Native: Use React Native format
         formData.append('file', { uri: photoUri, type: 'image/jpeg', name: 'photo.jpg' } as any);
     }
 
@@ -248,9 +252,16 @@ export async function getEvidence(violationId: string): Promise<EvidenceResponse
     });
 }
 
-// Legacy/Compatibility wrappers if needed (can be removed if we update all calls)
+export async function getViolationPdf(violationId: string): Promise<PdfResponse> {
+    const headers = await getAuthHeaders();
+    return fetchJson(`${VIOLATIONS_ENDPOINT}/${violationId}/pdf`, {
+        method: 'GET',
+        headers,
+    });
+}
+
+// Legacy
 export async function ensureAuthenticated() {
     const token = await getAuthToken();
     if (!token) await authenticateAnonymous();
 }
-

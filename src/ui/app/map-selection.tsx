@@ -41,14 +41,36 @@ export default function MapSelectionScreen() {
     const [address, setAddress] = useState<string>('вул. Шевченка, 1');
     const [city, setCity] = useState<string>('Львів');
 
-    // MODAL STATES
     const [cityModalVisible, setCityModalVisible] = useState(false);
     const [addressModalVisible, setAddressModalVisible] = useState(false);
     const [tempAddress, setTempAddress] = useState(address);
 
     const cities = ['Львів', 'Київ', 'Одеса', 'Харків', 'Дніпро'];
 
-    // GEO detection (web)
+    const cityCoords: Record<string, LatLng> = {
+        'Львів': { latitude: 49.8397, longitude: 24.0297 },
+        'Київ': { latitude: 50.4501, longitude: 30.5234 },
+        'Одеса': { latitude: 46.4825, longitude: 30.7233 },
+        'Харків': { latitude: 49.9935, longitude: 36.2304 },
+        'Дніпро': { latitude: 48.4647, longitude: 35.0462 },
+    };
+
+    const getNearestCity = (loc: LatLng) => {
+        let nearest = 'Львів';
+        let minDist = Infinity;
+        Object.entries(cityCoords).forEach(([name, c]) => {
+            const dist = Math.hypot(loc.latitude - c.latitude, loc.longitude - c.longitude);
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = name;
+            }
+        });
+        return nearest;
+    };
+
+    // ======================
+    // Автоматичне визначення геолокації
+    // ======================
     useEffect(() => {
         if (Platform.OS === 'web' && 'geolocation' in navigator) {
             navigator.geolocation.getCurrentPosition(
@@ -56,6 +78,12 @@ export default function MapSelectionScreen() {
                     const coords: LatLng = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
                     setLocation(coords);
                     setSelectedLocation(coords);
+
+                    const detectedCity = getNearestCity(coords);
+                    setCity(detectedCity);
+                    setAddress(detectedCity);
+                    setTempAddress(detectedCity);
+
                     setLoading(false);
                 },
                 () => setLoading(false)
@@ -65,10 +93,24 @@ export default function MapSelectionScreen() {
         }
     }, []);
 
+    // ======================
+    // Обробник зміни локації (при пересуванні мітки)
+    // ======================
     const handleLocationChange = (newLocation: LatLng, newAddress: string) => {
         setSelectedLocation(newLocation);
-        setAddress(newAddress);
         setTempAddress(newAddress);
+
+        // Автоматичне визначення міста
+        const detectedCity = getNearestCity(newLocation);
+        setCity(detectedCity);
+
+        // Якщо адреса не містить конкретної вулиці, підставляємо місто
+        if (!newAddress || cities.includes(newAddress)) {
+            setAddress(detectedCity);
+            setTempAddress(detectedCity);
+        } else {
+            setAddress(newAddress);
+        }
     };
 
     const handleConfirm = async () => {
@@ -109,6 +151,10 @@ export default function MapSelectionScreen() {
     const selectCity = (c: string) => {
         setCity(c);
         setCityModalVisible(false);
+        setAddress(c);
+        setTempAddress(c);
+        setLocation(cityCoords[c]);
+        setSelectedLocation(cityCoords[c]);
     };
 
     const openAddressModal = () => {
@@ -134,24 +180,16 @@ export default function MapSelectionScreen() {
     return (
         <View style={styles.container}>
             {/* HEADER */}
-            <View style={[styles.headerWrap, { paddingTop: insets.top + 10 }]}>
-                <View style={styles.backPill}>
-                    <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color="#000" />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* TITLE */}
-            <View style={styles.titleWrap}>
-                <ThemedText style={styles.titleText}>Відмітьте локацію авто</ThemedText>
+            <View style={[styles.headerWrap, { paddingTop: insets.top + 16, paddingHorizontal: 16 }]}>
+                <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color="#000" />
+                </TouchableOpacity>
+                <ThemedText style={styles.headerTitle}>Відмітьте локацію авто</ThemedText>
             </View>
 
             {/* MAP */}
-            <View style={styles.mapArea}>
-                <View style={styles.mapCard}>
-                    <UniversalMap center={center} onLocationChange={handleLocationChange} theme={colorScheme} />
-                </View>
+            <View style={styles.mapContainer}>
+                <UniversalMap center={center} onLocationChange={handleLocationChange} theme={colorScheme} />
             </View>
 
             {/* BOTTOM CARD */}
@@ -179,11 +217,7 @@ export default function MapSelectionScreen() {
                     onPress={handleConfirm}
                     disabled={creating}
                 >
-                    {creating ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <ThemedText style={styles.confirmButtonText}>Підтвердити вибір</ThemedText>
-                    )}
+                    {creating ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.confirmButtonText}>Підтвердити вибір</ThemedText>}
                 </TouchableOpacity>
             </View>
 
@@ -235,29 +269,18 @@ const styles = StyleSheet.create({
     full: { flex: 1, backgroundColor: '#E2ECF4', justifyContent: 'center', alignItems: 'center' },
     loadingText: { marginTop: 12, color: '#374151', fontSize: 15 },
 
-    headerWrap: { position: 'absolute', left: 16, right: 16, zIndex: 30 },
-    backPill: {
-        height: 56,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.9)',
-        justifyContent: 'center',
-        paddingHorizontal: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.05)',
+    headerWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        zIndex: 30,
+        gap: 12,
     },
-    backIcon: { width: 40, height: 40, justifyContent: 'center', alignItems: 'flex-start' },
+    backIcon: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
 
-    titleWrap: { marginTop: 86, alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
-    titleText: { fontSize: 20, fontWeight: '700', color: '#111827' },
-
-    mapArea: { paddingHorizontal: 16 },
-    mapCard: { height: 320, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', marginBottom: 18 },
+    mapContainer: { flex: 1, marginTop: 16, marginBottom: 16 },
 
     bottomCard: {
-        position: 'absolute',
-        left: 12,
-        right: 12,
-        bottom: 12,
         backgroundColor: '#fff',
         borderRadius: 18,
         paddingVertical: 18,
@@ -306,7 +329,7 @@ const styles = StyleSheet.create({
         maxHeight: '70%',
     },
     modalItem: { paddingVertical: 12 },
-    modalItemText: { fontSize: 18, color:"#000" },
+    modalItemText: { fontSize: 18, color: "#000" },
     modalClose: {
         marginTop: 16,
         backgroundColor: '#000',
